@@ -271,14 +271,15 @@ public class Type<T extends Type<T>> implements Cloneable {
   static final byte TTUPLE  =18; // Tuples; finite collections of unrelated Types, kept in parallel
   static final byte TOBJ    =19; // Memory objects; arrays and structs and strings
   static final byte TSTRUCT =20; // Memory Structs; tuples with named fields
-  static final byte TARY    =21; // Memory String type; an array of chars
+  static final byte TARY    =21; // Memory Array type
   static final byte TSTR    =22; // Memory String type; an array of chars
-  static final byte TMEM    =23; // Memory type; a map of Alias#s to TOBJs
-  static final byte TMEMPTR =24; // Memory pointer type; a collection of Alias#s
-  static final byte TFUNPTR =25; // Function pointer, refers to a collection of concrete functions
-  static final byte TFUNSIG =26; // Function signature; formals & ret.  Not any concrete function.
-  static final byte TLIVE   =27; // Liveness; backwards flow of TypeObj
-  static final byte TLAST   =28; // Type check
+  static final byte TFLD    =23; // Fields in structs
+  static final byte TMEM    =24; // Memory type; a map of Alias#s to TOBJs
+  static final byte TMEMPTR =25; // Memory pointer type; a collection of Alias#s
+  static final byte TFUNPTR =26; // Function pointer, refers to a collection of concrete functions
+  static final byte TFUNSIG =27; // Function signature; formals & ret.  Not any concrete function.
+  static final byte TLIVE   =28; // Liveness; backwards flow of TypeObj
+  static final byte TLAST   =29; // Type check
 
   public  static final Type ALL    = make( TALL   ); // Bottom
   public  static final Type ANY    = make( TANY   ); // Top
@@ -311,7 +312,7 @@ public class Type<T extends Type<T>> implements Cloneable {
   private boolean is_ptr() { byte t = _type;  return t == TFUNPTR || t == TMEMPTR; }
   private boolean is_num() { byte t = _type;  return t == TREAL || t == TXREAL || t == TNREAL || t == TXNREAL || t == TINT || t == TFLT; }
   // True if 'this' isa SCALAR, without the cost of a full 'meet()'
-  private static final byte[] ISA_SCALAR = new byte[]{/*ALL-0*/0,0,0,0,1,1,1,1,1,1,/*TNREAL-10*/1,1,1,1,/*TSIMPLE-14*/0, 1,1,1,0,0,0,0,0,0,1,1,/*TFUNSIG-26*/0,/*TLIVE-27*/0}/*TLAST=29*/;
+  private static final byte[] ISA_SCALAR = new byte[]{/*ALL-0*/0,0,0,0,1,1,1,1,1,1,/*TNREAL-10*/1,1,1,1,/*TSIMPLE-14*/0, 1,1,1,0,0,0,0,0,0,0,1,1,/*TFUNSIG-27*/0,/*TLIVE-28*/0}/*TLAST=29*/;
   public final boolean isa_scalar() { assert ISA_SCALAR.length==TLAST; return ISA_SCALAR[_type]!=0; }
   // Simplify pointers (lose what they point at).
   public Type simple_ptr() { return this; }

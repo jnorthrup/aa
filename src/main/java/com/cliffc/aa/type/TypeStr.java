@@ -3,6 +3,7 @@ package com.cliffc.aa.type;
 import com.cliffc.aa.util.SB;
 import com.cliffc.aa.util.Util;
 import com.cliffc.aa.util.VBitSet;
+import static com.cliffc.aa.type.TypeFld.Access;
 
 import java.util.function.Predicate;
 import java.util.HashMap;
@@ -90,8 +91,8 @@ public class TypeStr extends TypeObj<TypeStr> {
 
   // Update (approximately) the current TypeObj.  Strings are not allowed to be
   // updated, so this is a program type-error.
-  @Override public TypeObj update(byte fin, String fld, Type val) { return this; }
-  @Override public TypeObj st    (byte fin, String fld, Type val) { return this; }
+  @Override public TypeObj update(Access fin, String fld, Type val) { return this; }
+  @Override public TypeObj st    (Access fin, String fld, Type val) { return this; }
   @Override public boolean may_be_con() { return super.may_be_con() || _con != null; }
   @Override public boolean is_con() { return _con != null; }
   @Override public Type meet_nil(Type t) { return this; }

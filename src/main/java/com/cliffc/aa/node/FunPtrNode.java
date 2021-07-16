@@ -224,7 +224,7 @@ public final class FunPtrNode extends UnOrFunPtrNode {
     _referr = null;             // No longer a forward ref
     set_def(0,def.in(0));       // Same inputs
     set_def(1,def.in(1));
-    dsp.set_def(NewObjNode.def_idx(dsp._ts.find(tok)),def);
+    dsp.set_def(NewObjNode.def_idx(dsp._ts.fld_find(tok)),def);
     dsp.xval();
 
     fptr.bind(tok); // Debug only, associate variable name with function

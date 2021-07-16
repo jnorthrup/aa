@@ -4,6 +4,7 @@ import com.cliffc.aa.node.*;
 import com.cliffc.aa.tvar.TV2;
 import com.cliffc.aa.type.*;
 import com.cliffc.aa.util.*;
+import static com.cliffc.aa.type.TypeFld.Access;
 
 import java.util.HashSet;
 
@@ -96,7 +97,7 @@ public class Env implements AutoCloseable {
     for( NewNode.NewPrimNode lib : NewNode.NewPrimNode.INTRINSICS() )
       STK_0.add_fun(null,lib ._name,(FunPtrNode) GVN.xform(lib .as_fun(GVN)));
     // Top-level constants
-    STK_0.create_active("math_pi", Node.con(TypeFlt.PI),TypeStruct.FFNL);
+    STK_0.create_active("math_pi", Node.con(TypeFlt.PI),Access.Final);
     STK_0.no_more_fields();
     STK_0.unkeep();
     // Run the worklist dry

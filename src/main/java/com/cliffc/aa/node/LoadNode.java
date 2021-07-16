@@ -24,7 +24,7 @@ public class LoadNode extends Node {
   Node mem() { return in(MEM_IDX); }
   Node adr() { return in(2); }
   private Node set_mem(Node a) { return set_def(1,a); }
-  public int find(TypeStruct ts) { return ts.find(_fld); }
+  public int find(TypeStruct ts) { return ts.fld_find(_fld); }
 
   // Strictly reducing optimizations
   @Override public Node ideal_reduce() {
@@ -153,7 +153,7 @@ public class LoadNode extends Node {
         MrgProjNode mrg = (MrgProjNode)mem;
         NewNode nnn = mrg.nnn();
         if( nnn instanceof NewObjNode ) {
-          int idx = ((NewObjNode)nnn)._ts.find(fld);
+          int idx = ((NewObjNode)nnn)._ts.fld_find(fld);
           if( idx >= 0 && adr instanceof ProjNode && adr.in(0) == nnn ) return nnn; // Direct hit
         }  // wrong field name or wrong alias, cannot match
         if( aliases.test_recur(nnn._alias) ) return null; // Overlapping, but wrong address - dunno, so must fail
@@ -245,7 +245,7 @@ public class LoadNode extends Node {
       return tobj.oob();
     // Struct; check for field
     TypeStruct ts = (TypeStruct)tobj;
-    int idx = ts.find(_fld);  // Find the named field
+    int idx = ts.fld_find(_fld);  // Find the named field
     if( idx == -1 ) return Type.ALL;
     return ts.at(idx);          // Field type
   }

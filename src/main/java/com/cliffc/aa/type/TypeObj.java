@@ -2,6 +2,7 @@ package com.cliffc.aa.type;
 
 import com.cliffc.aa.util.SB;
 import com.cliffc.aa.util.VBitSet;
+import static com.cliffc.aa.type.TypeFld.Access;
 import java.util.function.Predicate;
 
 // Types which extend memory-based objects - currently Structs (which include
@@ -64,14 +65,14 @@ public class TypeObj<O extends TypeObj<O>> extends Type<O> {
   public Type fld(String fld) { return oob(); } // No such field, returns ANY or ALL
 
   // Update (approximately) the current TypeObj.  Merges fields.
-  public TypeObj update(byte fin, String fld, Type val) { return this; }
+  public TypeObj update(Access fin, String fld, Type val) { return this; }
   // Approximate array update.
   public TypeObj update(TypeInt idx, Type val) {
     if( this==ISUSED || this==OBJ ) return this;
     return TypeAry.ARY.dual().update(idx,val);
   }
   // Exact object update.  Replaces fields.
-  public TypeObj st    (byte fin, String fld, Type val) { return this; }
+  public TypeObj st    (Access fin, String fld, Type val) { return this; }
   // Keep the same basic type, and meet related fields.  Type error if basic
   // types are unrelated.
   public TypeObj st_meet(TypeObj obj) {

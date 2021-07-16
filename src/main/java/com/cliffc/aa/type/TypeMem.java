@@ -1,6 +1,8 @@
 package com.cliffc.aa.type;
 
 import com.cliffc.aa.util.*;
+import static com.cliffc.aa.AA.unimpl;
+import static com.cliffc.aa.type.TypeFld.Access;
 
 import java.util.Arrays;
 import java.util.BitSet;
@@ -368,22 +370,23 @@ public class TypeMem extends Type<TypeMem> {
       // fields may be added which we assume is a pointer to all.
       if( ts._open )
         return BitsAlias.FULL;  // Generic open struct points to all
-      for( int i=0; i<ts._ts.length; i++ ) {
-        Type fld = ts._ts[i];
-        if( TypeMemPtr.OOP.isa(fld) )
-          fld = TypeMemPtr.OOP;                      // All possible pointers
-        if( fld instanceof TypeFunPtr ) fld = ((TypeFunPtr)fld)._disp;
-        if( !(fld instanceof TypeMemPtr) ) continue; // Not a pointer, no more aliases
-        if( ((TypeMemPtr)fld)._aliases.test(1) )
-          return BitsAlias.FULL; // All possible pointers
-        // Walk the possible pointers, and include them in the slice
-        for( int ptralias : ((TypeMemPtr)fld)._aliases )
-          for( int kid=ptralias; kid!=0; kid = BitsAlias.next_kid(ptralias,kid) )
-            if( !visit.tset(kid) ) {
-              work.push(kid);
-              aliases = aliases.set(kid);
-            }
-      }
+      //for( int i=0; i<ts._ts.length; i++ ) {
+      //  Type fld = ts._ts[i];
+      //  if( TypeMemPtr.OOP.isa(fld) )
+      //    fld = TypeMemPtr.OOP;                      // All possible pointers
+      //  if( fld instanceof TypeFunPtr ) fld = ((TypeFunPtr)fld)._disp;
+      //  if( !(fld instanceof TypeMemPtr) ) continue; // Not a pointer, no more aliases
+      //  if( ((TypeMemPtr)fld)._aliases.test(1) )
+      //    return BitsAlias.FULL; // All possible pointers
+      //  // Walk the possible pointers, and include them in the slice
+      //  for( int ptralias : ((TypeMemPtr)fld)._aliases )
+      //    for( int kid=ptralias; kid!=0; kid = BitsAlias.next_kid(ptralias,kid) )
+      //      if( !visit.tset(kid) ) {
+      //        work.push(kid);
+      //        aliases = aliases.set(kid);
+      //      }
+      //}
+      throw unimpl();
     }
     assert !aliases.may_nil();
     return aliases;
@@ -457,7 +460,7 @@ public class TypeMem extends Type<TypeMem> {
   }
 
   // Field store into a conservative set of aliases.
-  public TypeMem update( BitsAlias aliases, byte fin, String fld, Type val ) {
+  public TypeMem update( BitsAlias aliases, Access fin, String fld, Type val ) {
     Ary<TypeObj> pubs  = new Ary<>(_pubs .clone());
     for( int alias : aliases )
       if( alias != 0 )
@@ -512,9 +515,10 @@ public class TypeMem extends Type<TypeMem> {
         TypeObj to = at(alias);
         if( !(to instanceof TypeStruct) ) return true;
         TypeStruct ts = (TypeStruct)to;
-        int idx = ts.find(fld);
-        if( idx == -1 || ts.fmod(idx) != TypeStruct.FFNL )
-          return true;          // Cannot check for R/O here, because R/O can lift to R/W
+        //int idx = ts.fld_find(fld);
+        //if( idx == -1 || ts.fmod(idx) != TypeStruct.FFNL )
+        //  return true;          // Cannot check for R/O here, because R/O can lift to R/W
+        throw unimpl();
       }
     }
     return false;

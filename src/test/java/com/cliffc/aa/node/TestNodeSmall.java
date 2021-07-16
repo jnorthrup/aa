@@ -9,6 +9,7 @@ import java.util.*;
 
 import static com.cliffc.aa.AA.*;
 import static com.cliffc.aa.type.TypeMemPtr.NO_DISP;
+import static com.cliffc.aa.type.TypeFld.Access;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -525,7 +526,7 @@ public class TestNodeSmall {
     RetNode ret = gvn.init(new RetNode(fun,parm_mem,parm_dsp,rpc,fun));
     FunPtrNode fptr = gvn.init(new FunPtrNode(ret,dsp_file_ptr));
     // Close the cycle
-    dsp_file.create("fact",fptr,TypeStruct.FFNL);
+    dsp_file.create("fact",fptr,Access.Final);
     dsp_file.no_more_fields();
     // Return the fptr to keep all alive
     ScopeNode env = new ScopeNode(null,true);
@@ -558,7 +559,7 @@ public class TestNodeSmall {
     // Display contains 'fact' pointing to self
     TypeMem tmem = (TypeMem) dsp_file_obj._val;
     TypeStruct tdisp0 = (TypeStruct)tmem.ld((TypeMemPtr)tdptr0);
-    assertEquals(tfptr0,tdisp0.at(tdisp0.find("fact")));
+    assertEquals(tfptr0,tdisp0.at(tdisp0.fld_find("fact")));
   }
 
 
@@ -598,7 +599,9 @@ public class TestNodeSmall {
     TypeTuple ts_int_flt = TypeTuple.make_args(TypeInt.INT64,TypeFlt.FLT64);
     TypeTuple ts_int_abc = TypeTuple.make_args(TypeInt.INT64,TypeMemPtr.ABCPTR);
     // @{ a:int; b:"abc" }
-    TypeStruct a_int_b_abc = TypeStruct.make(new String[]{"^","a","b"},TypeStruct.ts(TypeMemPtr.NO_DISP,TypeInt.INT64,TypeMemPtr.ABCPTR));
+    TypeStruct a_int_b_abc = TypeStruct.make(TypeFld.NO_DISP,
+                                             TypeFld.make("a",TypeInt.INT64,1),
+                                             TypeFld.make("b",TypeMemPtr.ABCPTR,2));
 
     // Build a bunch of function type signatures
     TypeFunSig[] sigs = new TypeFunSig[] {

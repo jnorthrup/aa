@@ -71,10 +71,11 @@ public class TypeTuple extends Type<TypeTuple> {
   // Make a Call args tuple from a Struct by adding Memory up front
   public static TypeTuple make(TypeStruct ts) {
     // TypeStruct includes a display/DSP_IDX, but what comes before
-    Type[] ts2 = Types.get(ts._ts.length+DSP_IDX);
+    Type[] ts2 = Types.get(ts.len()+DSP_IDX);
     ts2[CTL_IDX] = Type.CTRL;
     ts2[MEM_IDX] = TypeMem.ALLMEM;
-    System.arraycopy(ts._ts,0,ts2,DSP_IDX,ts._ts.length);
+    for( int i=0; i<ts.len(); i++ )
+      ts2[DSP_IDX+i] = ts.at(i);
     return make(ts2);
   }
   public static TypeTuple make_args(Type[] ts) {

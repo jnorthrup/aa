@@ -8,6 +8,7 @@ import org.junit.Test;
 
 import java.util.function.Function;
 
+import static com.cliffc.aa.type.TypeFld.Access;
 import static com.cliffc.aa.AA.ARG_IDX;
 import static org.junit.Assert.*;
 
@@ -193,9 +194,9 @@ public class TestParse {
     test("0 && 1 || 2 && 3", TypeInt.con(3));    // Precedence
 
     test_obj("x:=y:=0; z=x++ && y++;(x,y,z)", // increments x, but it starts zero, so y never increments
-             TypeStruct.make_tuple(Type.XNIL,TypeInt.con(1),Type.XNIL,Type.XNIL));
+             TypeStruct.make(TypeInt.con(1),Type.XNIL,Type.XNIL));
     test_obj("x:=y:=0; x++ && y++; z=x++ && y++; (x,y,z)", // x++; x++; y++; (2,1,0)
-      TypeStruct.make_tuple(Type.XNIL,TypeInt.con(2),TypeInt.con(1),Type.XNIL));
+             TypeStruct.make(TypeInt.con(2),TypeInt.con(1),Type.XNIL));
     test("(x=1) && x+2", TypeInt.con(3)); // Def x in 1st position
 
     testerr("1 && (x=2;0) || x+3 && x+4", "'x' not defined prior to the short-circuit",5); // x maybe alive
@@ -236,7 +237,7 @@ public class TestParse {
     test("f0 = { x -> x ? {+}(f0(x-1),1) : 0 }; f0(2)", TypeInt.con(2));
     testerr("fact = { x -> x <= 1 ? x : x*fact(x-1) }; fact()","Passing 0 arguments to fact which takes 1 arguments",46);
     test_obj("fact = { x -> x <= 1 ? x : x*fact(x-1) }; (fact(0),fact(1),fact(2))",
-             TypeStruct.make_tuple(Type.XNIL,Type.XNIL,TypeInt.con(1),TypeInt.con(2)));
+             TypeStruct.make(Type.XNIL,TypeInt.con(1),TypeInt.con(2)));
 
     // Co-recursion requires parallel assignment & type inference across a lexical scope
     test("is_even = { n -> n ? is_odd(n-1) : 1}; is_odd = {n -> n ? is_even(n-1) : 0}; is_even(4)", TypeInt.con(1) );
@@ -270,7 +271,7 @@ public class TestParse {
     testerr("fun:{int str -> int}={x y -> x+y}; fun(2,3)", "3 is not a *str",41);
     // Test that the type-check is on the variable and not the function.
     test_obj("fun={x y -> x*2}; bar:{int str -> int} = fun; baz:{int @{x;y} -> int} = fun; (fun(2,3),bar(2,\"abc\"))",
-             TypeStruct.make_tuple(Type.XNIL,TypeInt.con(4),TypeInt.con(4)));
+             TypeStruct.make(TypeInt.con(4),TypeInt.con(4)));
     testerr("fun={x y -> x+y}; baz:{int @{x;y} -> int} = fun; (fun(2,3), baz(2,3))",
             "3 is not a *@{x:=; y:=; ...}", 66);
     testerr("fun={x y -> x+y}; baz={x:int y:@{x;y} -> foo(x,y)}; (fun(2,3), baz(2,3))",
@@ -337,7 +338,7 @@ public class TestParse {
     test("x=@{a:=1;b= {a=a+1;b=0}}; x.b(); x.a",TypeInt.con(2));
 
     // Tuple
-    test_obj_isa("(0,\"abc\")", TypeStruct.make_tuple(Type.NIL,Type.NIL,TypeMemPtr.OOP));
+    test_obj_isa("(0,\"abc\")", TypeStruct.make(Type.NIL,TypeMemPtr.OOP));
     test("(1,\"abc\").0", TypeInt.TRUE);
     test_obj("(1,\"abc\").1", TypeStr.ABC);
 
@@ -354,7 +355,7 @@ public class TestParse {
     testerr ("Point=:@{x;y}; Point((0,1))", "*(0, 1) is not a *Point:@{x:=; y:=}",21);
     testerr("x=@{n: =1;}","Missing type after ':'",7);
     testerr("x=@{n=;}","Missing ifex after assignment of 'n'",6);
-    test_obj_isa("x=@{n}",TypeStruct.make(new String[]{"^","n"},TypeStruct.ts(TypeMemPtr.OOP,Type.XNIL),new byte[]{TypeStruct.FFNL,TypeStruct.FRW}));
+    test_obj_isa("x=@{n}",TypeStruct.make(TypeFld.DISP,TypeFld.make("n",Type.XNIL,Access.RW,1)));
   }
 
   @Test public void testParse05() {
@@ -380,7 +381,7 @@ public class TestParse {
     test("A= :int; A(1)", TypeInt.TRUE.set_name("A:"));
     test_ptr("A= :(str?, int); A(0,2)","A:(0, 2)");
     // Named recursive types
-    test_ptr("A= :(A?, int); A(0,2)",(alias) -> TypeMemPtr.make(alias,TypeStruct.make_tuple(TypeStruct.ts(TypeMemPtr.NO_DISP,Type.XNIL,TypeInt.con(2))).set_name("A:")));
+    test_ptr("A= :(A?, int); A(0,2)",(alias) -> TypeMemPtr.make(alias,TypeStruct.make("A:",false,TypeStruct.tups(Type.XNIL,TypeInt.con(2)),false)));
     test_ptr("A= :(A?, int); A(0,2)","A:(0, 2)");
     test    ("A= :@{n=A?; v=flt}; A(@{n=0;v=1.2}).v;", TypeFlt.con(1.2));
     test_ptr("A= :(A?, int); A(A(0,2),3)","A:(*A:(0, 2), 3)");
@@ -394,8 +395,8 @@ public class TestParse {
     assertTrue  (tt3.at(0).is_display_ptr());
     assertEquals(Type.XNIL     ,tt3.at(1));
     assertEquals(TypeInt.con(3),tt3.at(2));
-    assertEquals("n",tt3._flds[1]);
-    assertEquals("v",tt3._flds[2]);
+    assertEquals("n",tt3.fld(1)._fld);
+    assertEquals("v",tt3.fld(2)._fld);
 
     // Missing type B is also never worked on.
     test_isa("A= :@{n=B?; v=int}", TypeFunPtr.GENERIC_FUNPTR);
@@ -422,7 +423,7 @@ public class TestParse {
     // interspersed with recursive computation calls.
     test_obj_isa("map={x -> x ? @{nn=map(x.n);vv=x.v&x.v} : 0};"+
                  "map(@{n=math_rand(1)?0:@{n=math_rand(1)?0:@{n=math_rand(1)?0:@{n=0;v=1};v=2};v=3};v=4})",
-                 TypeStruct.make(FLDS2,TypeStruct.ts(TypeMemPtr.DISPLAY_PTR,TypeMemPtr.STRUCT0,TypeInt.INT8))); //con(20.25)
+                 TypeStruct.make(TypeFld.DISP,TypeFld.make("nn",TypeMemPtr.STRUCT0,1),TypeFld.make("vv",TypeInt.INT8,2)));
     // Test does loads after recursive call, which should be allowed to bypass.
     test("sum={x -> x ? sum(x.n) + x.v : 0};"+
          "sum(@{n=math_rand(1)?0:@{n=math_rand(1)?0:@{n=math_rand(1)?0:@{n=0;v=1};v=2};v=3};v=4})",
@@ -448,34 +449,38 @@ public class TestParse {
     assertEquals("List:", tt4._name);
     TypeMemPtr tmp5 = (TypeMemPtr)tt4.at(1);
     assertEquals(2.3*2.3,tt4.at(2).getd(),1e-6);
-    assertEquals("next",tt4._flds[1]);
-    assertEquals("val" ,tt4._flds[2]);
+    assertEquals("next",tt4.fld(1)._fld);
+    assertEquals("val" ,tt4.fld(2)._fld);
 
     // Test inferring a recursive struct type, with a little help
-    Type[] ts0 = TypeStruct.ts(Type.XNIL, TypeMemPtr.make_nil(14,TypeObj.ISUSED),TypeFlt.con(1.2*1.2));
     test_struct("map={x:@{n=;v=flt}? -> x ? @{nn=map(x.n);vv=x.v*x.v} : 0}; map(@{n=0;v=1.2})",
-                TypeStruct.make(FLDS2,ts0,TypeStruct.ffnls(3)));
+                TypeStruct.make(TypeFld.NO_DISP,
+                                TypeFld.make("nn",TypeMemPtr.make_nil(14,TypeObj.ISUSED),1),
+                                TypeFld.make("vv",TypeFlt.con(1.2*1.2)                  ,2)));
 
     // Test inferring a recursive struct type, with less help.  This one
     // inlines so doesn't actually test inferring a recursive type.
-    Type[] ts1 = TypeStruct.ts(Type.XNIL, TypeMemPtr.make_nil(23,TypeObj.ISUSED),TypeFlt.con(1.2*1.2));
     test_struct("map={x -> x ? @{nn=map(x.n);vv=x.v*x.v} : 0}; map(@{n=0;v=1.2})",
-                TypeStruct.make(FLDS2,ts1,TypeStruct.ffnls(3)));
+                TypeStruct.make(TypeFld.NO_DISP,
+                                TypeFld.make("nn",TypeMemPtr.make_nil(23,TypeObj.ISUSED),1),
+                                TypeFld.make("vv",TypeFlt.con(1.2*1.2)                  ,2)));
 
     // Test inferring a recursive struct type, with less help. Too complex to
     // inline, so actual inference happens
     test_obj_isa("map={x -> x ? @{nn=map(x.n);vv=x.v*x.v} : 0};"+
                  "map(@{n=math_rand(1)?0:@{n=math_rand(1)?0:@{n=math_rand(1)?0:@{n=0;v=1.2};v=2.3};v=3.4};v=4.5})",
-                 TypeStruct.make(FLDS2,TypeStruct.ts(TypeMemPtr.STRUCT0,TypeMemPtr.STRUCT0,TypeFlt.FLT64))); //con(20.25)
+                TypeStruct.make(TypeFld.NO_DISP,
+                                TypeFld.make("nn",TypeMemPtr.STRUCT0,1),
+                                TypeFld.make("vv",TypeFlt.FLT64     ,2)));
 
     // Test inferring a recursive tuple type, with less help.  This one
     // inlines so doesn't actually test inferring a recursive type.
     test_ptr("map={x -> x ? (map(x.0),x.1*x.1) : 0}; map((0,1.2))",
-             (alias) -> TypeMemPtr.make(alias,TypeStruct.make_tuple(Type.XNIL,Type.XNIL,TypeFlt.con(1.2*1.2))));
+             (alias) -> TypeMemPtr.make(alias,TypeStruct.make(Type.XNIL,TypeFlt.con(1.2*1.2))));
 
     test_obj_isa("map={x -> x ? (map(x.0),x.1*x.1) : 0};"+
                  "map((math_rand(1)?0: (math_rand(1)?0: (math_rand(1)?0: (0,1.2), 2.3), 3.4), 4.5))",
-                 TypeStruct.make(TypeStruct.ts(Type.XNIL,TypeMemPtr.STRUCT0,TypeFlt.FLT64/*TypeFlt.con(20.25)*/)));
+                 TypeStruct.make(TypeMemPtr.STRUCT0,TypeFlt.FLT64));
   }
 
 
@@ -559,14 +564,12 @@ public class TestParse {
 
     // After inlining once, we become pair-aware.
 
-    TypeStruct xts_int = TypeStruct.make_tuple(Type.XNIL,TypeMemPtr.OOP0,TypeInt.INT64);
+    TypeStruct xts_int = TypeStruct.make(TypeMemPtr.OOP0,TypeInt.INT64);
     TypeMemPtr xpt_int = TypeMemPtr.make(BitsAlias.RECORD_BITS0,xts_int);
-    TypeStruct xts_str = TypeStruct.make_tuple(Type.XNIL,xpt_int,TypeMemPtr.STRPTR);
+    TypeStruct xts_str = TypeStruct.make(xpt_int,TypeMemPtr.STRPTR);
     TypeMemPtr xtmp = TypeMemPtr.make(BitsAlias.RECORD_BITS0,xts_str);
 
-    // Disabled, until can size-split a self-recursive function & also inline it with correct Ret memory type.
-    //test_isa(ll_cona+ll_conb+ll_conc+ll_cond+ll_cone+ll_cont+ll_map2+ll_fun2+ll_apl2,xtmp);
-
+    test_isa(ll_cona+ll_conb+ll_conc+ll_cond+ll_cone+ll_cont+ll_map2+ll_fun2+ll_apl2,xtmp);
   }
 
   @Test public void testParse09() {
@@ -578,7 +581,7 @@ public class TestParse {
     testerr("x=1+y","Unknown ref 'y'",4);
 
     test("x:=1", TypeInt.TRUE);
-    test_obj("x:=0; a=x; x:=1; b=x; x:=2; (a,b,x)", TypeStruct.make_tuple(Type.XNIL,Type.XNIL,TypeInt.con(1),TypeInt.con(2)));
+    test_obj("x:=0; a=x; x:=1; b=x; x:=2; (a,b,x)", TypeStruct.make(Type.XNIL,TypeInt.con(1),TypeInt.con(2)));
 
     testerr("x=1; x:=2; x", "Cannot re-assign final val 'x'", 5);
     testerr("x=1; x =2; x", "Cannot re-assign final val 'x'", 5);
@@ -614,8 +617,9 @@ public class TestParse {
   @Test public void testParse10() {
     Object dummy = TypeStruct.DISPLAY;
     // Test re-assignment in struct
-    Type[] ts = TypeStruct.ts(TypeMemPtr.DISP_SIMPLE, TypeInt.con(1), TypeInt.con(2));
-    test_obj_isa("x=@{n:=1;v:=2}", TypeStruct.make(FLDS, ts,new byte[]{TypeStruct.FFNL,TypeStruct.FRW,TypeStruct.FRW}));
+    test_obj_isa("x=@{n:=1;v:=2}", TypeStruct.make(TypeFld.DISP,
+                                                   TypeFld.make("n",TypeInt.con(1),Access.RW,1),
+                                                   TypeFld.make("v",TypeInt.con(2),Access.RW,2)));
     testerr ("x=@{n =1;v:=2}; x.n  = 3; x.n", "Cannot re-assign final field '.n' in @{n=1; v:=2}",18);
     test    ("x=@{n:=1;v:=2}; x.n  = 3", TypeInt.con(3));
     test_ptr("x=@{n:=1;v:=2}; x.n := 3; x", "@{n:=3; v:=2}");
@@ -629,7 +633,7 @@ public class TestParse {
     testerr ("ptr2rw = @{f:=1}; ptr2final:@{f=} = ptr2rw; ptr2final", "*@{f:=1} is not a *@{f=; ...}",27); // Cannot cast-to-final
 
     test_obj_isa("ptr2   = @{f =1}; ptr2final:@{f=} = ptr2  ; ptr2final", // Good cast
-                 TypeStruct.make(new String[]{"^","f"},new Type[]{TypeMemPtr.DISPLAY_PTR,TypeInt.con(1)},TypeStruct.ffnls(2)));
+                 TypeStruct.make(TypeFld.DISP,TypeFld.make("f",TypeInt.con(1),1)));
     testerr ("ptr=@{f=1}; ptr2rw:@{f:=} = ptr; ptr2rw", "*@{f=1} is not a *@{f:=; ...}", 18); // Cannot cast-away final
     test    ("ptr=@{f=1}; ptr2rw:@{f:=} = ptr; 2", TypeInt.con(2)); // Dead cast-away of final
     test    ("@{x:=1;y =2}:@{x;y=}.y", TypeInt.con(2)); // Allowed reading final field
@@ -708,7 +712,7 @@ public class TestParse {
     test    ("[3][0]", Type.XNIL);
     test    ("ary = [3]; ary[0]:=2", TypeInt.con(2));
     test_obj("ary = [3]; ary[0]:=0; ary[1]:=1; ary[2]:=2; (ary[0],ary[1],ary[2])", // array create, array storing
-      TypeStruct.make_tuple(Type.XNIL,TypeInt.INT8,TypeInt.INT8,TypeInt.INT8));
+             TypeStruct.make(TypeInt.INT8,TypeInt.INT8,TypeInt.INT8));
     testary("0[0]","0 is not a *[]Scalar/obj",1);
     testary("[3] [4]","Index must be out of bounds",5);
     testary("[3] [-1]","Index must be out of bounds",5);
@@ -757,7 +761,8 @@ public class TestParse {
     // being called with 1 argument.  Error to call it.
     testerr("x={x x};x(1)","Passing 1 arguments to x which takes 0 arguments",9);
     // id accepts and returns both ints and reference types (arrays).
-    test_struct("noinline_id = {x->x};(noinline_id(5)&7, #noinline_id([3]))",TypeStruct.make_tuple(Type.XNIL,TypeInt.INT8,TypeInt.con(3)));
+    test_struct("noinline_id = {x->x};(noinline_id(5)&7, #noinline_id([3]))",
+                TypeStruct.make(TypeInt.INT8,TypeInt.con(3)));
     // Should be typable with H-M
     test_ptr("noinline_map={lst fcn -> lst ? fcn lst.1};"+
              "in_int=(0,2);"+       // List of ints
@@ -885,7 +890,7 @@ HashTable = {@{
   static private void test_struct( String program, TypeStruct expected) {
     try( TypeEnv te = run(program) ) {
       TypeStruct actual = (TypeStruct)te._tmem.ld((TypeMemPtr)te._t);
-      actual = actual.set_fld(0,Type.XNIL,TypeStruct.FFNL);
+      actual = actual.set_fld(0,Type.XNIL,Access.Final);
       assertEquals(expected,actual);
     }
   }
