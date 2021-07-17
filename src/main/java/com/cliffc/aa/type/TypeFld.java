@@ -1,9 +1,8 @@
 package com.cliffc.aa.type;
 
-import com.cliffc.aa.AA;
-import com.cliffc.aa.util.*;
-import static com.cliffc.aa.AA.unimpl;
-
+import com.cliffc.aa.util.SB;
+import com.cliffc.aa.util.Util;
+import com.cliffc.aa.util.VBitSet;
 import org.jetbrains.annotations.NotNull;
 
 
@@ -16,8 +15,12 @@ public class TypeFld extends Type<TypeFld> {
   public Access _access;        // Field access type: read/write, final, read/only
   public int _order;            // Field order in the struct, or -1 for undefined (Bot) or -2 for conforming (top)
 
-  private TypeFld     ( String fld, Type t, Access access, int order ) { super(TFLD); init(fld,t,access,order); }
-  private TypeFld init( String fld, Type t, Access access, int order ) { _fld=fld; _t=t; _access=access; _order=order; return this; }
+  private TypeFld() { super(TFLD); }
+  private TypeFld init( @NotNull String fld, Type t, Access access, int order ) {
+    _fld=fld; _t=t; _access=access; _order=order;
+    _hash = compute_hash();
+    return this;
+  }
 
   // Note: hash does not depend on field type, to support building cyclic TypeStructs.
   @Override public int compute_hash() { return _fld.hashCode()+_access.hashCode()+_order; }
@@ -29,20 +32,19 @@ public class TypeFld extends Type<TypeFld> {
   }
 
   @Override public SB str( SB sb, VBitSet dups, TypeMem mem, boolean debug ) {
+    if( dups.tset(_uid) ) return sb.p('$'); // Break recursive printing cycle
     sb.p(_fld).p(_access.toString());
     return _t==null ? sb.p('!') : (_t==Type.SCALAR ? sb : _t.str(sb,dups,mem,debug));
   }
-  
+
   private static TypeFld FREE=null;
-  @Override protected TypeFld free( TypeFld ret ) { FREE=this; return ret; }
+  @Override protected TypeFld free( TypeFld ret ) { _hash=0; _t=null; FREE=this; return ret; }
   // Split malloc/hashcons is used when making cyclic structures
   public static TypeFld malloc( String fld, Type t, int order ) { return malloc(fld,t,Access.Final,order); }
   public static TypeFld malloc( String fld, Type t, Access access, int order ) {
-    TypeFld t1 = FREE == null
-      ? new TypeFld(fld,t,access,order)
-      : FREE  .init(fld,t,access,order);
+    TypeFld t1 = FREE == null ? new TypeFld() : FREE;
     FREE = null;
-    return t1;
+    return t1.init(fld,t,access,order);
   }
   public TypeFld hashcons_free() {
     TypeFld t2 = (TypeFld)hashcons();
@@ -56,52 +58,70 @@ public class TypeFld extends Type<TypeFld> {
   private static final String[] TUPS = new String[]{"^","0","1","2"};
   public static TypeFld make_arg( Type t, int order ) { return make(ARGS[order],t,Access.Final,order);  }
   public static TypeFld make_tup( Type t, int order ) { return make(TUPS[order],t,Access.Final,order);  }
-  public TypeFld make_from(Type t) { return make(_fld,t,_access,_order); }
+  public TypeFld make_from(Type t) { return t==_t ? this : make(_fld,t,_access,_order); }
 
-  @Override protected TypeFld xdual() { return new TypeFld(sdual(_fld),_t._dual,_access.dual(),odual(_order)); }
+  @Override protected TypeFld xdual() { return malloc(sdual(_fld),_t._dual,_access.dual(),odual(_order)); }
   @Override protected TypeFld rdual() {
     if( _dual != null ) return _dual;
-    TypeFld dual = _dual = new TypeFld(sdual(_fld),_t.rdual(),_access.dual(),odual(_order));
+    TypeFld dual = _dual = malloc(sdual(_fld),_t.rdual(),_access.dual(),odual(_order));
     dual._dual = this;
-    if( _hash != 0 ) dual._hash = dual.compute_hash();
+    assert _hash!=0 && dual._hash!=0;
     return dual;
   }
-  
+
   @Override protected TypeFld xmeet( Type tf ) {
     if( this==tf ) return this;
     if( tf._type != TFLD ) throw typerr(tf);
     TypeFld f = (TypeFld)tf;
-    String fld   = smeet(_fld,  f._fld);
+    String fld   = smeet(_fld,  f._fld)  ;
     Type   t     = _t     .meet(f._t     );
     Access access= _access.meet(f._access);
     int    order = omeet(_order,f._order);
     return make(fld,t,access,order);
-  }  
+  }
 
   // Used during cyclic struct meets, either side (but not both) might be null,
   // and the _t field is not filled in.  A new TypeFld is returned.
   static TypeFld cmeet(TypeFld f0, TypeFld f1) {
-    throw unimpl();
+    if( f0==null ) return malloc(f1._fld,null,f1._access,f1._order);
+    if( f1==null ) return malloc(f0._fld,null,f0._access,f0._order);
+    String fld   = smeet(f0._fld,  f1._fld);
+    Access access= f0._access.meet(f1._access);
+    int    order = omeet(f0._order,f1._order);
+    return malloc(fld,null,access,order);
   }
   // Used during cyclic struct meets.  The LHS is meeted into directly.
-  // The _f field is not filled in.
-  TypeFld cmeet(TypeFld f1) {
-    throw unimpl();
+  // The _t field is not filled in.
+  void cmeet(TypeFld f) {
+    _fld = smeet(_fld,f._fld);
+    _access = _access.meet(f._access);
+    _order = omeet(_order,f._order);
   }
-  
+
   public enum Access {
-    NoAccess,                   // Cannot access (either read or write)
-    Final,                      // No future load will ever see a different value than any final store
+    ReadOnly,                   // Read-Only; other threads can Write
     RW,                         // Read/Write
-    ReadOnly;                   // Read-Only; other threads can Write
-    static Access top() { return NoAccess; }
-    
-    Access dual() {
-      throw unimpl();
-    }
-    Access meet(Access a) {
-      throw unimpl();
-    }
+    Final,                      // No future load will ever see a different value than any final store
+    NoAccess,                   // Cannot access (either read or write)
+    HiReadWrite,
+    HiFinal,
+    HiNoAccess;
+    public static final Access[] values = values();
+    static Access bot() { return ReadOnly; }
+    Access dual() { return values[("6453120".charAt(ordinal()))-'0']; }
+    private static final String[] FMEET = {
+      /*    0123456 */
+      /*0*/"0000000",
+      /*1*/"0101111",
+      /*2*/"0022222",
+      /*3*/"0123333",
+      /*4*/"0123434",
+      /*5*/"0123355",
+      /*6*/"0123456",
+    };
+    Access meet(Access a) { return values[FMEET[ordinal()].charAt(a.ordinal())-'0']; }
+    private static final String[] STRS = new String[]{"==",":=","=","~=","!:=!","!=!","!~=!"};
+    @Override public String toString() { return STRS[ordinal()]; }
   };
 
   // Field names
@@ -136,18 +156,18 @@ public class TypeFld extends Type<TypeFld> {
     return oBot;
   }
 
-         static final TypeFld FLDTOP  = make(fldTop,Type.ANY,Access.top(),oTop);
-  public static final TypeFld NO_DISP = make("^",TypeMemPtr.NO_DISP,Access.Final,0);
-  public static final TypeFld DISP    = make("^",TypeMemPtr.DISP_SIMPLE,Access.Final,0);
- 
+  public static final TypeFld NO_DISP = make("^",Type.ANY,Access.Final,0);
+
   // Setting the type during recursive construction.
   public Type setX(Type t) {
-    assert _dual==null && _hash==0; // Not interned
+    assert _dual==null; // Not interned
     return (_t = t);
   }
 
   // If this is a display field
   @Override public boolean is_display_ptr() { return _order==0 && Util.eq(_fld,"^") && _t.is_display_ptr(); }
+
+  @Override public TypeFld simple_ptr() { return make_from(_t.simple_ptr()); }
 
   // Simple string find on an array
   static int fld_find(TypeFld[] flds, String fld) {
@@ -156,6 +176,6 @@ public class TypeFld extends Type<TypeFld> {
         return i;
     return -1;
   }
-  
+
 }
 

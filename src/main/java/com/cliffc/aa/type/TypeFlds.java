@@ -2,7 +2,6 @@ package com.cliffc.aa.type;
 
 import com.cliffc.aa.util.Ary;
 import com.cliffc.aa.util.IHashMap;
-import static com.cliffc.aa.AA.unimpl;
 
 // Class to make hashcons Type[].
 // Bug to change after interning.
@@ -76,7 +75,7 @@ public class TypeFlds {
   }
 
 
-  
+
   public static TypeFld[] get(int len) { return tary(len).get(); }
   public static void free(TypeFld[] ts) { tary(ts.length)._free.push(ts); }
   public static TypeFld[] hash_cons(TypeFld[] ts) { return tary(ts.length).hash_cons_(ts); }
@@ -115,7 +114,8 @@ public class TypeFlds {
   // Original assumed in-use, not freed.
   public static TypeFld[] clone(TypeFld[] ts) {
     TypeFld[] ts2 = tary(ts.length).get();
-    System.arraycopy(ts,0,ts2,0,ts.length);
+    for( int i=0; i<ts.length; i++ )
+      ts2[i] = TypeFld.malloc(ts[i]._fld,ts[i]._t,ts[i]._access,ts[i]._order);
     return ts2;
   }
 

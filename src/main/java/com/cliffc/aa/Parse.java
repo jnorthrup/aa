@@ -1208,7 +1208,7 @@ public class Parse implements Comparable<Parse> {
     }
 
     if( peek("@{") ) {          // Struct type
-      Ary<TypeFld> flds = new Ary<>(new TypeFld[]{TypeFld.DISP});
+      Ary<TypeFld> flds = new Ary<>(new TypeFld[]{TypeMemPtr.DISP_FLD});
       while( true ) {
         String tok = token();            // Scan for 'id'
         if( tok == null ) break;         // end-of-struct-def
@@ -1232,7 +1232,7 @@ public class Parse implements Comparable<Parse> {
     // "(,int)" is a 2-entry tuple
     // "(, , )" is a 2-entry tuple
     if( peek('(') ) { // Tuple type
-      Ary<TypeFld> flds = new Ary<>(new TypeFld[]{TypeFld.DISP});
+      Ary<TypeFld> flds = new Ary<>(new TypeFld[]{TypeMemPtr.DISP_FLD});
       byte c;
       while( (c=skipWS()) != ')' ) { // No more types...
         Type t = Type.SCALAR;    // Untyped, most generic field type

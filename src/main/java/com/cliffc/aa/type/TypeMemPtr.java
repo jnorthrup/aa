@@ -3,10 +3,11 @@ package com.cliffc.aa.type;
 import com.cliffc.aa.util.Ary;
 import com.cliffc.aa.util.SB;
 import com.cliffc.aa.util.VBitSet;
-import static com.cliffc.aa.AA.unimpl;
 
 import java.util.HashMap;
 import java.util.function.Predicate;
+
+import static com.cliffc.aa.type.TypeFld.Access;
 
 // Pointers-to-memory; these can be both the address and the value part of
 // Loads and Stores.  They carry a set of aliased TypeObjs.
@@ -71,10 +72,21 @@ public final class TypeMemPtr extends Type<TypeMemPtr> {
   public static TypeMemPtr make_nil( int alias, TypeObj obj ) { return make(BitsAlias.make0(alias).meet_nil(),obj); }
   public TypeMemPtr make_from( TypeObj obj ) { return make(_aliases,obj); }
 
-  public  static final TypeMemPtr DISPLAY_PTR= new TypeMemPtr(BitsAlias.RECORD_BITS0,TypeStruct.DISPLAY );
+  // The display is a self-recursive structure: slot 0 is a ptr to a Display.
+  // To break class-init cycle, this is made here, now.
+  public static final TypeFld    DISP_FLD= TypeFld.malloc("^",Type.NIL,Access.Final,0);
+  public static final TypeStruct DISPLAY = TypeStruct.malloc("",false,TypeFlds.ts(DISP_FLD),true);
+  public static final TypeMemPtr DISPLAY_PTR= new TypeMemPtr(BitsAlias.RECORD_BITS0,DISPLAY );
   static {
+    DISP_FLD._hash = DISP_FLD.compute_hash();
+    DISPLAY._hash = DISPLAY.compute_hash();
     DISPLAY_PTR._hash = DISPLAY_PTR.compute_hash(); // Filled in during DISPLAY.install_cyclic
+    assert DISPLAY.at(0) == Type.NIL;
+    DISPLAY.fld(0).setX(TypeMemPtr.DISPLAY_PTR);
+    DISPLAY.install_cyclic(new Ary<>(Types.ts(DISPLAY ,TypeMemPtr.DISPLAY_PTR)));
+    assert DISPLAY.is_display();
   }
+
   public  static final TypeMemPtr ISUSED0= make(BitsAlias.FULL    ,TypeObj.ISUSED); // Includes nil
   public  static final TypeMemPtr ISUSED = make(BitsAlias.NZERO   ,TypeObj.ISUSED); // Excludes nil
   public  static final TypeMemPtr OOP0   = make(BitsAlias.FULL    ,TypeObj.OBJ); // Includes nil
@@ -89,9 +101,9 @@ public final class TypeMemPtr extends Type<TypeMemPtr> {
   public  static final TypeMemPtr STRUCT0= make(BitsAlias.RECORD_BITS0,TypeStruct.ALLSTRUCT);
   public  static final TypeMemPtr NILPTR = make(BitsAlias.NIL,TypeObj.ISUSED);
   public  static final TypeMemPtr EMTPTR = make(BitsAlias.EMPTY,TypeObj.UNUSED);
-  public  static final TypeMemPtr DISP_SIMPLE= make(BitsAlias.RECORD_BITS0,TypeObj.ISUSED); // closed display
+  public static final TypeMemPtr DISP_SIMPLE= make(BitsAlias.RECORD_BITS0,TypeObj.ISUSED); // closed display
   public  static final Type NO_DISP= Type.ANY;
-  static final TypeMemPtr[] TYPES = new TypeMemPtr[]{OOP0,STR0,STRPTR,ABCPTR,STRUCT,EMTPTR};
+  static final Type[] TYPES = new Type[]{OOP0,STR0,STRPTR,ABCPTR,STRUCT,EMTPTR,DISPLAY,DISPLAY_PTR};
 
   @Override public boolean is_display_ptr() {
     BitsAlias x = _aliases.strip_nil();
@@ -196,43 +208,41 @@ public final class TypeMemPtr extends Type<TypeMemPtr> {
 
   public BitsAlias aliases() { return _aliases; }
 
-  // Build a mapping from types to their depth in a shortest-path walk from the
-  // root.  Only counts depth on TypeStructs with the matching alias.  Only
-  // used for testing.
+  // Only used for testing.  Build a mapping from types to their depth in a
+  // shortest-path walk from the root.  Only counts depth on TypeStructs with
+  // the matching alias.
   HashMap<Type,Integer> depth() {
-    //int alias = _aliases.getbit();
-    //HashMap<Type,Integer> ds = new HashMap<>();
-    //Ary<TypeStruct> t0 = new Ary<>(new TypeStruct[]{(TypeStruct)_obj});
-    //Ary<TypeStruct> t1 = new Ary<>(new TypeStruct[1],0);
-    //int d=0;                    // Current depth
-    //while( !t0.isEmpty() ) {
-    //  while( !t0.isEmpty() ) {
-    //    TypeStruct ts = t0.pop();
-    //    if( ds.putIfAbsent(ts,d) == null )
-    //      for( Type tf : ts._ts ) {
-    //        if( ds.putIfAbsent(tf,d) == null &&  // Everything in ts is in the current depth
-    //            tf instanceof TypeMemPtr ) {
-    //          TypeMemPtr tmp = (TypeMemPtr)tf;
-    //          if( tmp._obj instanceof TypeStruct )
-    //            (tmp._aliases.test(alias) ? t1 : t0).push((TypeStruct)tmp._obj);
-    //        }
-    //      }
-    //  }
-    //  Ary<TypeStruct> tmp = t0; t0 = t1; t1 = tmp; // Swap t0,t1
-    //  d++;                                         // Raise depth
-    //}
-    //return ds;
-    throw unimpl();
+    int alias = _aliases.getbit();
+    HashMap<Type,Integer> ds = new HashMap<>();
+    Ary<TypeStruct> t0 = new Ary<>(new TypeStruct[]{(TypeStruct)_obj});
+    Ary<TypeStruct> t1 = new Ary<>(new TypeStruct[1],0);
+    int d=0;                    // Current depth
+    while( !t0.isEmpty() ) {
+      while( !t0.isEmpty() ) {
+        TypeStruct ts = t0.pop();
+        if( ds.putIfAbsent(ts,d) == null )
+          for( TypeFld fld : ts ) {
+            if( ds.putIfAbsent(fld._t,d) == null &&  // Everything in flds is in the current depth
+                fld._t instanceof TypeMemPtr ) {
+              TypeMemPtr tmp = (TypeMemPtr)fld._t;
+              if( tmp._obj instanceof TypeStruct )
+                (tmp._aliases.test(alias) ? t1 : t0).push((TypeStruct)tmp._obj);
+            }
+          }
+      }
+      Ary<TypeStruct> tmp = t0; t0 = t1; t1 = tmp; // Swap t0,t1
+      d++;                                         // Raise depth
+    }
+    return ds;
   }
 
-  // Max depth of struct, with a matching alias TMP
+  // Only used for testing.  Max depth of struct, with a matching alias TMP.
   static int max(int alias, HashMap<Type,Integer> ds) {
-    //int max = -1;
-    //for( Type t : ds.keySet() )
-    //  if( (t instanceof TypeMemPtr) && ((TypeMemPtr)t)._aliases.test(alias) )
-    //    max = Math.max(max,ds.get(t));
-    //return max+1;               // Struct is 1 more depth than TMP
-    throw unimpl();
+    int max = -1;
+    for( Type t : ds.keySet() )
+      if( (t instanceof TypeMemPtr) && ((TypeMemPtr)t)._aliases.test(alias) )
+        max = Math.max(max,ds.get(t));
+    return max+1;               // Struct is 1 more depth than TMP
   }
 
   // Lattice of conversions:

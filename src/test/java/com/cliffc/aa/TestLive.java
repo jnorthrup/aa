@@ -53,7 +53,7 @@ public class TestLive {
     fdy._val = ti9;
 
     // New object, fields x,y holding ints
-    NewObjNode nnn = new NewObjNode(false,TypeStruct.DISPLAY,Node.con(Type.NIL));
+    NewObjNode nnn = new NewObjNode(false,TypeMemPtr.DISPLAY,Node.con(Type.NIL));
     nnn.create_active("x",fdx,Access.Final);
     nnn.create_active("y",fdy,Access.Final);
     nnn._val = Type.ANY;

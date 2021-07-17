@@ -79,8 +79,6 @@ public class HM {
   static final boolean DO_GCP = true;
 
   public static Root hm( String sprog ) {
-    Object dummy = TypeStruct.DISPLAY;
-
     Worklist work = new Worklist();
     PrimSyn.WORK=work;
 

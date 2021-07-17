@@ -15,9 +15,7 @@ public class TestType {
   // temp/junk holder for "instant" junits, when debugged moved into other tests
   @Test public void testType() {
     Type.init0(new HashMap<>());
-    Object dummy0 = TypeStruct.TYPES;
-    Object dummy1 = TypeMemPtr.TYPES;
-    
+
     Type t0 = Type.XNSCALR;
     Type t1 = TypeFunPtr.GENERIC_FUNPTR.dual();
     Type t01 = t0.meet(t1);
@@ -26,8 +24,6 @@ public class TestType {
 
   @Test public void testBits0() {
     Type.init0(new HashMap<>());
-    Object dummy0 = TypeStruct.TYPES;
-    Object dummy1 = TypeMemPtr.TYPES;
 
     // This looks like a crossing-nil bug, but it is not quite.
     // What is "nil join *[4]->str"?
@@ -61,8 +57,6 @@ public class TestType {
   // Need the basic invariants: complete, distributed, commutative, associative.
   @Test public void testBits() {
     Type.init0(new HashMap<>());
-    Object dummy0 = TypeStruct.TYPES;
-    Object dummy1 = TypeMemPtr.TYPES;
     // 1 - obj
     //   2 - tuples & structs
     //   3 - arrays
@@ -266,7 +260,7 @@ public class TestType {
     Type tff = tsx.meet(tf);     //
     assertEquals(tf,tff);        // tsx.isa(tf)
     TypeStruct t0 = TypeStruct.make(Types.ts(nil)); //  (nil)
-    TypeStruct ts0= TypeStruct.make(TypeFld.make("x",nil,0));  // @{x:nil}
+    TypeStruct ts0= TypeStruct.make(TypeFld.NO_DISP,TypeFld.make("x",nil,1));  // @{x:nil}
     Type tss = ts0.meet(t0);
     assertEquals(t0,tss);      // t0.isa(ts0)
 
@@ -529,7 +523,6 @@ public class TestType {
 
   // Validate crush is monotonic
   @Test public void testCrush() {
-    Object dummy0 = TypeStruct.TYPES;
     TypeObj[] objs = new TypeObj[]{
       TypeObj.ISUSED,
       TypeObj.OBJ,
@@ -539,7 +532,7 @@ public class TestType {
       TypeStruct.INT64_INT64,
       TypeStruct.NAMEPT,
       TypeStruct.POINT,
-      TypeStruct.DISPLAY,
+      TypeMemPtr.DISPLAY,
       TypeStruct.A,
       TypeStruct.ARW,
     };
@@ -567,9 +560,6 @@ public class TestType {
 
   @Test public void testCommuteSymmetricAssociative() {
     Type.init0(new HashMap<>());
-    Object dummy0 = TypeStruct.TYPES;
-    BitsFun.make_new_fidx(BitsFun.ALL);
-
     assertTrue(Type.check_startup());
   }
 

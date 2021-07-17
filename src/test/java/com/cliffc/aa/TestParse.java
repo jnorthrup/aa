@@ -18,7 +18,6 @@ public class TestParse {
 
   // temp/junk holder for "instant" junits, when debugged moved into other tests
   @Test public void testParse() {
-    TypeStruct dummy = TypeStruct.DISPLAY;
     // TODO:
     // TEST for merging str:[7+43+44] and another concrete fcn, such as {&}.
     // The Meet loses precision to fast.  This is a typing bug.
@@ -65,7 +64,6 @@ public class TestParse {
   }
 
   @Test public void testParse00() {
-    TypeStruct dummy = TypeStruct.DISPLAY;
     // Simple int
     test("1",   TypeInt.TRUE);
     // Unary operator
@@ -205,7 +203,6 @@ public class TestParse {
   }
 
   @Test public void testParse02() {
-    TypeStruct dummy = TypeStruct.DISPLAY;
     test("{5}()", TypeInt.con(5)); // No args nor -> required; this is simply a function returning 5, being executed
     // Since call not-taken, post GCP Parms not loaded from _tf, limited to ~Scalar.  The
     // hidden internal call from {&} to the primitive is never inlined (has ~Scalar args)
@@ -303,7 +300,6 @@ public class TestParse {
   }
 
   @Test public void testParse04() {
-    TypeStruct dummy = TypeStruct.DISPLAY;
     // simple anon struct tests
     testerr("a=@{x=1.2;y}; x", "Unknown ref 'x'",14);
     testerr("a=@{x=1;x=2}.x", "Cannot re-assign final field '.x' in @{x=1}",8);
@@ -355,7 +351,7 @@ public class TestParse {
     testerr ("Point=:@{x;y}; Point((0,1))", "*(0, 1) is not a *Point:@{x:=; y:=}",21);
     testerr("x=@{n: =1;}","Missing type after ':'",7);
     testerr("x=@{n=;}","Missing ifex after assignment of 'n'",6);
-    test_obj_isa("x=@{n}",TypeStruct.make(TypeFld.DISP,TypeFld.make("n",Type.XNIL,Access.RW,1)));
+    test_obj_isa("x=@{n}",TypeStruct.make(TypeMemPtr.DISP_FLD,TypeFld.make("n",Type.XNIL,Access.RW,1)));
   }
 
   @Test public void testParse05() {
@@ -408,7 +404,6 @@ public class TestParse {
 
   private static final String[] FLDS2= new String[]{"^","nn","vv"};
   @Test public void testParse07() {
-    TypeStruct dummy = TypeStruct.DISPLAY;
     // Passing a function recursively
     test("f0 = { f x -> x ? f(f0(f,x-1),1) : 0 }; f0({&},2)", Type.XNIL);
     test("f0 = { f x -> x ? f(f0(f,x-1),1) : 0 }; f0({+},2)", TypeInt.con(2));
@@ -423,7 +418,7 @@ public class TestParse {
     // interspersed with recursive computation calls.
     test_obj_isa("map={x -> x ? @{nn=map(x.n);vv=x.v&x.v} : 0};"+
                  "map(@{n=math_rand(1)?0:@{n=math_rand(1)?0:@{n=math_rand(1)?0:@{n=0;v=1};v=2};v=3};v=4})",
-                 TypeStruct.make(TypeFld.DISP,TypeFld.make("nn",TypeMemPtr.STRUCT0,1),TypeFld.make("vv",TypeInt.INT8,2)));
+                 TypeStruct.make(TypeMemPtr.DISP_FLD,TypeFld.make("nn",TypeMemPtr.STRUCT0,1),TypeFld.make("vv",TypeInt.INT8,2)));
     // Test does loads after recursive call, which should be allowed to bypass.
     test("sum={x -> x ? sum(x.n) + x.v : 0};"+
          "sum(@{n=math_rand(1)?0:@{n=math_rand(1)?0:@{n=math_rand(1)?0:@{n=0;v=1};v=2};v=3};v=4})",
@@ -486,7 +481,6 @@ public class TestParse {
 
   @Test public void testParse08() {
     Object dummy = Env.GVN; // Force class loading cycle
-    Type dummy2 = TypeStruct.DISPLAY;
     // Main issue with the map() test is final assignments crossing recursive
     // not-inlined calls.  Smaller test case:
     test_ptr("tmp=@{val=2;nxt=@{val=1;nxt=0}}; noinline_map={tree -> tree ? @{vv=tree.val&tree.val;nn=noinline_map(tree.nxt)} : 0}; noinline_map(tmp)",
@@ -615,9 +609,8 @@ public class TestParse {
   // object.  Hence you cannot cast to "final", but you can cast to "read-only"
   // which only applies to you, and not to other r/w pointers.
   @Test public void testParse10() {
-    Object dummy = TypeStruct.DISPLAY;
     // Test re-assignment in struct
-    test_obj_isa("x=@{n:=1;v:=2}", TypeStruct.make(TypeFld.DISP,
+    test_obj_isa("x=@{n:=1;v:=2}", TypeStruct.make(TypeMemPtr.DISP_FLD,
                                                    TypeFld.make("n",TypeInt.con(1),Access.RW,1),
                                                    TypeFld.make("v",TypeInt.con(2),Access.RW,2)));
     testerr ("x=@{n =1;v:=2}; x.n  = 3; x.n", "Cannot re-assign final field '.n' in @{n=1; v:=2}",18);
@@ -633,7 +626,7 @@ public class TestParse {
     testerr ("ptr2rw = @{f:=1}; ptr2final:@{f=} = ptr2rw; ptr2final", "*@{f:=1} is not a *@{f=; ...}",27); // Cannot cast-to-final
 
     test_obj_isa("ptr2   = @{f =1}; ptr2final:@{f=} = ptr2  ; ptr2final", // Good cast
-                 TypeStruct.make(TypeFld.DISP,TypeFld.make("f",TypeInt.con(1),1)));
+                 TypeStruct.make(TypeMemPtr.DISP_FLD,TypeFld.make("f",TypeInt.con(1),1)));
     testerr ("ptr=@{f=1}; ptr2rw:@{f:=} = ptr; ptr2rw", "*@{f=1} is not a *@{f:=; ...}", 18); // Cannot cast-away final
     test    ("ptr=@{f=1}; ptr2rw:@{f:=} = ptr; 2", TypeInt.con(2)); // Dead cast-away of final
     test    ("@{x:=1;y =2}:@{x;y=}.y", TypeInt.con(2)); // Allowed reading final field
@@ -728,7 +721,6 @@ public class TestParse {
   // Parametric polymorphism
   @Ignore
   @Test public void testParse15() {
-    TypeStruct dummy = TypeStruct.DISPLAY;
     TypeMemPtr tdisp = TypeMemPtr.make(BitsAlias.make0(2),TypeObj.ISUSED);
     // Should be typable with H-M
     test_ptr("noinline_map={lst fcn -> lst ? fcn lst.1};"+
