@@ -5,7 +5,6 @@ import org.junit.Test;
 
 import java.util.HashMap;
 
-import static com.cliffc.aa.type.TypeFld.Access;
 import static org.junit.Assert.*;
 
 
@@ -428,22 +427,22 @@ public class TestApprox {
     TypeStruct  x7 = TypeStruct.make(TypeFld.make("v",TypeInt.con( 7),0),lnil,rnil);
     TypeMemPtr px7 = TypeMemPtr.make(alias,x7 );
 
-    TypeStruct  x6 = TypeStruct.make(TypeFld.make("v",TypeInt.con( 6),0),px12,rnil);
+    TypeStruct  x6 = TypeStruct.make(TypeFld.make("v",TypeInt.con( 6),0),TypeFld.make("l",px12,1),rnil);
     TypeMemPtr px6 = TypeMemPtr.make(alias,x6 );
 
-    TypeStruct  x5 = TypeStruct.make(TypeFld.make("v",TypeInt.con( 5),0),px10,rnil);
+    TypeStruct  x5 = TypeStruct.make(TypeFld.make("v",TypeInt.con( 5),0),TypeFld.make("l",px10,1),rnil);
     TypeMemPtr px5 = TypeMemPtr.make(alias,x5 );
 
-    TypeStruct  x4 = TypeStruct.make(TypeFld.make("v",TypeInt.con( 4),0),px8 ,px9 );
+    TypeStruct  x4 = TypeStruct.make(TypeFld.make("v",TypeInt.con( 4),0),TypeFld.make("l",px8 ,1),TypeFld.make("r",px9,2) );
     TypeMemPtr px4 = TypeMemPtr.make(alias,x4 );
 
-    TypeStruct  x3 = TypeStruct.make(TypeFld.make("v",TypeInt.con( 3),0),px6 ,px7 );
+    TypeStruct  x3 = TypeStruct.make(TypeFld.make("v",TypeInt.con( 3),0),TypeFld.make("l",px6 ,1),TypeFld.make("r",px7,2) );
     TypeMemPtr px3 = TypeMemPtr.make(alias,x3 );
 
-    TypeStruct  x2 = TypeStruct.make(TypeFld.make("v",TypeInt.con( 2),0),px4 ,px5 );
+    TypeStruct  x2 = TypeStruct.make(TypeFld.make("v",TypeInt.con( 2),0),TypeFld.make("l",px4 ,1),TypeFld.make("r",px5,2) );
     TypeMemPtr px2 = TypeMemPtr.make(alias,x2 );
 
-    TypeStruct  x1 = TypeStruct.make(TypeFld.make("v",TypeInt.con( 1),0),px2 ,px3 );
+    TypeStruct  x1 = TypeStruct.make(TypeFld.make("v",TypeInt.con( 1),0),TypeFld.make("l",px2 ,1),TypeFld.make("r",px3,2) );
     TypeMemPtr px1 = TypeMemPtr.make(alias,x1 );
 
     // Check sanity

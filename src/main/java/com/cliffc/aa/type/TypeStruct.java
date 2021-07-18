@@ -621,7 +621,7 @@ public class TypeStruct extends TypeObj<TypeStruct> {
       if( old == Type.NIL || old == Type.XNIL ) return nptr.ax_meet_nil(old);
       if( old == Type.SCALAR )
         return union(nt,old); // Result is a scalar, which changes the structure of the new types.
-      if( old == Type.XSCALAR ) break; // Result is the nt unchanged
+      if( old == Type.XSCALAR || old == Type.ANY ) break; // Result is the nt unchanged
       if( !(old instanceof TypeMemPtr) ) throw AA.unimpl(); // Not a xscalar, not a memptr, probably falls to scalar
       TypeMemPtr optr = (TypeMemPtr)old;
       nptr._aliases = nptr._aliases.meet(optr._aliases);

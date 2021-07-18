@@ -5,6 +5,8 @@ import com.cliffc.aa.util.Util;
 import com.cliffc.aa.util.VBitSet;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.function.Predicate;
+
 
 // A field in a TypeStruct
 public class TypeFld extends Type<TypeFld> {
@@ -29,6 +31,13 @@ public class TypeFld extends Type<TypeFld> {
     if( !(o instanceof TypeFld) ) return false;
     TypeFld t = (TypeFld)o;
     return Util.eq(_fld,t._fld) && _t==t._t && _access==t._access && _order==t._order;
+  }
+  @Override public boolean cycle_equals( Type o ) {
+    if( this==o ) return true;
+    if( !(o instanceof TypeFld) ) return false;
+    TypeFld t2 = (TypeFld)o;
+    if( !Util.eq(_fld,t2._fld) ||  _access!=t2._access || _order!=t2._order ) return false;
+    return _t == t2._t || _t.cycle_equals(t2._t);
   }
 
   @Override public SB str( SB sb, VBitSet dups, TypeMem mem, boolean debug ) {
@@ -169,6 +178,8 @@ public class TypeFld extends Type<TypeFld> {
   @Override public boolean is_display_ptr() { return _order==0 && Util.eq(_fld,"^") && _t.is_display_ptr(); }
 
   @Override public TypeFld simple_ptr() { return make_from(_t.simple_ptr()); }
+  @SuppressWarnings("unchecked")
+  @Override void walk( Predicate<Type> p ) { if( p.test(this) ) _t.walk(p); }
 
   // Simple string find on an array
   static int fld_find(TypeFld[] flds, String fld) {
