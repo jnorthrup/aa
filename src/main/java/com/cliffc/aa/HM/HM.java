@@ -1003,7 +1003,7 @@ public class HM {
       @Override Type apply(Syntax[] args) {
         T2 tcon = find().args(1).args(0);
         assert tcon.is_base();
-        return TypeMemPtr.make(PAIR_ALIAS,TypeStruct.make(TypeStruct.flds(tcon._flow,args==null ? Root.widen(_targs[0]) : args[0]._flow)));
+        return TypeMemPtr.make(PAIR_ALIAS,TypeStruct.make(TypeStruct.tups(tcon._flow,args==null ? Root.widen(_targs[0]) : args[0]._flow)));
       }
     }
   }
@@ -1019,7 +1019,7 @@ public class HM {
     @Override Type apply(Syntax[] args) {
       TypeFld[] ts = TypeFlds.get(args.length+1);
       ts[0] = TypeFld.NO_DISP;       // Display
-      for( int i=0; i<args.length; i++ ) ts[i+1] = TypeFld.make_tup(args[i]._flow,i);
+      for( int i=0; i<args.length; i++ ) ts[i+1] = TypeFld.make_tup(args[i]._flow,i+1);
       return TypeMemPtr.make(PAIR_ALIAS,TypeStruct.make(ts));
     }
   }
@@ -1034,7 +1034,7 @@ public class HM {
     @Override Type apply(Syntax[] args) {
       TypeFld[] ts = TypeFlds.get(args.length+1);
       ts[0] = TypeFld.NO_DISP;       // Display
-      for( int i=0; i<args.length; i++ ) ts[i+1] = TypeFld.make_tup(args[i]._flow,i);
+      for( int i=0; i<args.length; i++ ) ts[i+1] = TypeFld.make_tup(args[i]._flow,i+1);
       return TypeMemPtr.make(TRIPLE_ALIAS,TypeStruct.make(ts));
     }
   }
@@ -1392,7 +1392,7 @@ public class HM {
           TypeFld[] ts = TypeFlds.get(_ids.length+1);
           ts[0] = TypeFld.NO_DISP;
           for( int i=0; i<_ids.length; i++ )
-            ts[i+1] = TypeFld.malloc(_ids[i],null,Access.Final,i);
+            ts[i+1] = TypeFld.malloc(_ids[i],null,Access.Final,i+1);
           tstr = TypeStruct.malloc("",false,ts,true);
           tstr._hash = tstr.compute_hash();
           ADUPS.put(_uid,tstr); // Stop cycles

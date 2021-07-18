@@ -170,7 +170,8 @@ public class TypeFld extends Type<TypeFld> {
 
   // Setting the type during recursive construction.
   public Type setX(Type t) {
-    assert _dual==null; // Not interned
+    if( _t==t) return t; // No change
+    assert _dual==null;  // Not interned
     return (_t = t);
   }
 

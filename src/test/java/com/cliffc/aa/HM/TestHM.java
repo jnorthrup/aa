@@ -1,11 +1,9 @@
 package com.cliffc.aa.HM;
 
-import com.cliffc.aa.HM.HM.*;
+import com.cliffc.aa.HM.HM.Root;
 import com.cliffc.aa.type.*;
 import org.junit.Before;
 import org.junit.Test;
-
-import com.cliffc.aa.type.TypeFld.Access;
 
 import static org.junit.Assert.assertEquals;
 
@@ -25,13 +23,13 @@ public class TestHM {
     return TypeFunSig.make(TypeTuple.make_ret(ret),TypeTuple.make_args());
   }
 
-  private static final TypeMemPtr tuple2  = TypeMemPtr.make(7,TypeStruct.make(Type.SCALAR,   Type.SCALAR   ));
-  private static final TypeMemPtr tuplen2 = TypeMemPtr.make(7,TypeStruct.make(Type.NSCALR,   Type.NSCALR   ));
-  private static final TypeMemPtr tuple82 = TypeMemPtr.make(7,TypeStruct.make(TypeInt.NINT8, TypeInt.NINT8 ));
-  private static final TypeMemPtr tuple55 = TypeMemPtr.make(7,TypeStruct.make(TypeInt.con(5),TypeInt.con(5)));
+  private static TypeStruct make_tups(Type t0, Type t1         ) { return TypeStruct.make(TypeStruct.tups(t0,t1   )); }
+  private static TypeStruct make_tups(Type t0, Type t1, Type t2) { return TypeStruct.make(TypeStruct.tups(t0,t1,t2)); }
+  private static final TypeMemPtr tuple2  = TypeMemPtr.make(7,make_tups(Type.SCALAR,   Type.SCALAR   ));
+  private static final TypeMemPtr tuplen2 = TypeMemPtr.make(7,make_tups(Type.NSCALR,   Type.NSCALR   ));
+  private static final TypeMemPtr tuple82 = TypeMemPtr.make(7,make_tups(TypeInt.NINT8, TypeInt.NINT8 ));
+  private static final TypeMemPtr tuple55 = TypeMemPtr.make(7,make_tups(TypeInt.con(5),TypeInt.con(5)));
   private static final TypeFunSig ret_tuple2 = tfs(tuple2);
-  private static final String[] XY = new String[]{"^","x","y"};
-  private static final String[] N1V1 = new String[]{"^","n1","v1"};
   private static final TypeMemPtr tuple9  = TypeMemPtr.make(9,TypeStruct.make(TypeStruct.flds(Type.SCALAR,Type.SCALAR)));
 
   @Test(expected = RuntimeException.class)
@@ -41,7 +39,7 @@ public class TestHM {
                                     "3", TypeInt.con(3));  }
 
   @Test public void test02() { run( "(pair1 3)" ,
-                                    "{ A -> ( 3, $A)[7] }", tfs(TypeMemPtr.make(7,TypeStruct.make(TypeInt.con(3),Type.SCALAR)))); }
+                                    "{ A -> ( 3, $A)[7] }", tfs(TypeMemPtr.make(7,make_tups(TypeInt.con(3),Type.SCALAR)))); }
 
   @Test public void test03() { run( "{ z -> (pair (z 0) (z \"abc\")) }" ,
                                     "{ { *[0,4]\"abc\"? -> A } -> ( $A, $A)[7] }", tfs(tuple2)); }
@@ -68,7 +66,7 @@ public class TestHM {
       assertEquals("( 3, *[4]\"abc\")[7]",syn._hmt.p());
     if( HM.DO_GCP )
       if( HM.DO_HM )
-        assertEquals(TypeMemPtr.make(7,TypeStruct.make(TypeInt.con(3),TypeMemPtr.make(4,TypeStr.ABC))),syn.flow_type());
+        assertEquals(TypeMemPtr.make(7,make_tups(TypeInt.con(3),TypeMemPtr.make(4,TypeStr.ABC))),syn.flow_type());
       else
         assertEquals(tuplen2,syn.flow_type());
   }
@@ -111,7 +109,7 @@ public class TestHM {
       assertEquals("( *[4]str, flt64)[7]",syn._hmt.p());
     if( HM.DO_GCP )
       if( HM.DO_HM )
-        assertEquals(TypeMemPtr.make(7,TypeStruct.make(TypeMemPtr.STRPTR,TypeFlt.FLT64)),syn.flow_type());
+        assertEquals(TypeMemPtr.make(7,make_tups(TypeMemPtr.STRPTR,TypeFlt.FLT64)),syn.flow_type());
       else
         assertEquals(tuple2,syn.flow_type());
   }
@@ -147,9 +145,9 @@ public class TestHM {
       assertEquals("{ A -> ( B:Cannot unify A:( 3, $A)[7] and 5, $B)[7] }",syn._hmt.p());
     if( HM.DO_GCP )
       if( HM.DO_HM )
-        assertEquals(tfs(TypeMemPtr.make(7,TypeStruct.make(Type.XNSCALR,TypeMemPtr.make(7,TypeStruct.make(TypeInt.con(3),Type.XNSCALR))))),syn.flow_type());
+        assertEquals(tfs(TypeMemPtr.make(7,make_tups(Type.XNSCALR,TypeMemPtr.make(7,make_tups(TypeInt.con(3),Type.XNSCALR))))),syn.flow_type());
       else
-        assertEquals(tfs(TypeMemPtr.make(7,TypeStruct.make(TypeInt.con(5),Type.NSCALR))),syn.flow_type());
+        assertEquals(tfs(TypeMemPtr.make(7,make_tups(TypeInt.con(5),Type.NSCALR))),syn.flow_type());
   }
 
   @Test public void test19() { run("cons ={x y-> {cadr -> (cadr x y)}};"+
@@ -173,7 +171,7 @@ public class TestHM {
       assertEquals("( *[4]str, int1)[7]",syn._hmt.p());
     if( HM.DO_GCP )
       if( HM.DO_HM )
-        assertEquals(TypeMemPtr.make(7,TypeStruct.make(TypeMemPtr.STRPTR,TypeInt.BOOL)),syn.flow_type());
+        assertEquals(TypeMemPtr.make(7,make_tups(TypeMemPtr.STRPTR,TypeInt.BOOL)),syn.flow_type());
       else
         assertEquals(tuple2,syn.flow_type());
   }
@@ -241,9 +239,9 @@ public class TestHM {
     BitsAlias aliases = BitsAlias.make0(alias);
     if( nil ) aliases = aliases.meet_nil();
     TypeMemPtr cycle_ptr0 = TypeMemPtr.make(aliases,TypeObj.XOBJ);
-    TypeStruct cycle_str1 = TypeStruct.make(TypeFld.NO_DISP,TypeFld.malloc("n1",cycle_ptr0,1),TypeFld.malloc("v1",fld,1));
+    TypeStruct cycle_str1 = TypeStruct.make(TypeFld.NO_DISP,TypeFld.make("n1",cycle_ptr0,1),TypeFld.make("v1",fld,2));
     TypeMemPtr cycle_ptr1 = TypeMemPtr.make(aliases,cycle_str1);
-    TypeStruct cycle_str2 = TypeStruct.make(TypeFld.NO_DISP,TypeFld.malloc("n1",cycle_ptr1,1),TypeFld.malloc("v1",fld,1));
+    TypeStruct cycle_str2 = TypeStruct.make(TypeFld.NO_DISP,TypeFld.make("n1",cycle_ptr1,1),TypeFld.make("v1",fld,2));
     TypeStruct cycle_strn = cycle_str2.approx(1,alias);
     TypeMemPtr cycle_ptrn = (TypeMemPtr)cycle_strn.at(1);
     return cycle_ptrn;
@@ -285,10 +283,10 @@ public class TestHM {
 
   // try the worse-case expo blow-up test case from SO
   @Test public void test35() {
-    TypeFunPtr tfp = TypeFunPtr.make(15,3,Type.ANY);
-    TypeMemPtr tmp0 = TypeMemPtr.make(8,TypeStruct.make(tfp ,tfp ,tfp ));
-    TypeMemPtr tmp1 = TypeMemPtr.make(8,TypeStruct.make(tmp0,tmp0,tmp0));
-    TypeMemPtr tmp2 = TypeMemPtr.make(8,TypeStruct.make(tmp1,tmp1,tmp1));
+    TypeFunPtr tfp  = TypeFunPtr.make(15,3,Type.ANY);
+    TypeMemPtr tmp0 = TypeMemPtr.make(8,make_tups(tfp ,tfp ,tfp ));
+    TypeMemPtr tmp1 = TypeMemPtr.make(8,make_tups(tmp0,tmp0,tmp0));
+    TypeMemPtr tmp2 = TypeMemPtr.make(8,make_tups(tmp1,tmp1,tmp1));
 
     run("p0 = { x y z -> (triple x y z) };"+
         "p1 = (triple p0 p0 p0);"+
@@ -311,18 +309,18 @@ public class TestHM {
         // Unrolled, known to only produce results where either other nested
         // struct is from a different allocation site.
         TypeMemPtr cycle_ptr0 = TypeMemPtr.make(BitsAlias.FULL.make(0,10),TypeObj.XOBJ);
-        TypeStruct cycle_str1 = TypeStruct.make(TypeFld.NO_DISP,TypeFld.malloc("n1",cycle_ptr0,1),TypeFld.malloc("v1",TypeMemPtr.STRPTR,1));
+        TypeStruct cycle_str1 = TypeStruct.make(TypeFld.NO_DISP,TypeFld.make("n1",cycle_ptr0,1),TypeFld.make("v1",TypeMemPtr.STRPTR,2));
         TypeMemPtr cycle_ptr1 = TypeMemPtr.make(BitsAlias.FULL.make(0, 9),cycle_str1);
-        TypeStruct cycle_str2 = TypeStruct.make(TypeFld.NO_DISP,TypeFld.malloc("n1",cycle_ptr1,1),TypeFld.malloc("v1",TypeMemPtr.STRPTR,1));
+        TypeStruct cycle_str2 = TypeStruct.make(TypeFld.NO_DISP,TypeFld.make("n1",cycle_ptr1,1),TypeFld.make("v1",TypeMemPtr.STRPTR,2));
         TypeMemPtr cycle_ptr2 = TypeMemPtr.make(BitsAlias.FULL.make(0,10),cycle_str2);
-        TypeStruct cycle_str3 = TypeStruct.make(TypeFld.NO_DISP,TypeFld.malloc("n1",cycle_ptr2,1),TypeFld.malloc("v1",TypeMemPtr.STRPTR,1));
+        TypeStruct cycle_str3 = TypeStruct.make(TypeFld.NO_DISP,TypeFld.make("n1",cycle_ptr2,1),TypeFld.make("v1",TypeMemPtr.STRPTR,2));
         cycle_strX = cycle_str3;
       } else {
         // Not unrolled, both structs are folded
         TypeMemPtr cycle_ptr0 = TypeMemPtr.make(BitsAlias.FULL.make(0,7, 8),TypeObj.XOBJ);
-        TypeStruct cycle_str1 = TypeStruct.make(TypeFld.NO_DISP,TypeFld.malloc("n1",cycle_ptr0,1),TypeFld.malloc("v1",TypeMemPtr.STRPTR,1));
+        TypeStruct cycle_str1 = TypeStruct.make(TypeFld.NO_DISP,TypeFld.make("n1",cycle_ptr0,1),TypeFld.make("v1",TypeMemPtr.STRPTR,2));
         TypeMemPtr cycle_ptr1 = TypeMemPtr.make(BitsAlias.FULL.make(0,7, 8),cycle_str1);
-        TypeStruct cycle_str2 = TypeStruct.make(TypeFld.NO_DISP,TypeFld.malloc("n1",cycle_ptr1,1),TypeFld.malloc("v1",TypeMemPtr.STRPTR,1));
+        TypeStruct cycle_str2 = TypeStruct.make(TypeFld.NO_DISP,TypeFld.make("n1",cycle_ptr1,1),TypeFld.make("v1",TypeMemPtr.STRPTR,2));
         cycle_strX = cycle_str2;
       }
       TypeStruct cycle_strn = cycle_strX.approx(1,9);
@@ -384,7 +382,7 @@ public class TestHM {
       assertEquals("( *[4]str, int1)[7]",syn._hmt.p());
     if( HM.DO_GCP )
       if( HM.DO_HM )
-        assertEquals(TypeMemPtr.make(7,TypeStruct.make(TypeMemPtr.STRPTR,TypeInt.BOOL)),syn.flow_type());
+        assertEquals(TypeMemPtr.make(7,make_tups(TypeMemPtr.STRPTR,TypeInt.BOOL)),syn.flow_type());
       else
         assertEquals(tuple2,syn.flow_type());
   }
