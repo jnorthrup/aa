@@ -59,6 +59,7 @@ public class TypeFld extends Type<TypeFld> {
   public static TypeFld make_arg( Type t, int order ) { return make(ARGS[order],t,Access.Final,order);  }
   public static TypeFld make_tup( Type t, int order ) { return make(TUPS[order],t,Access.Final,order);  }
   public TypeFld make_from(Type t) { return t==_t ? this : make(_fld,t,_access,_order); }
+  public TypeFld make_from(Type t, Access a) { return (t==_t && a==_access) ? this : make(_fld,t,a,_order); }
 
   @Override protected TypeFld xdual() { return malloc(sdual(_fld),_t._dual,_access.dual(),odual(_order)); }
   @Override protected TypeFld rdual() {

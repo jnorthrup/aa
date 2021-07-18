@@ -221,7 +221,7 @@ public final class TypeMemPtr extends Type<TypeMemPtr> {
       while( !t0.isEmpty() ) {
         TypeStruct ts = t0.pop();
         if( ds.putIfAbsent(ts,d) == null )
-          for( TypeFld fld : ts ) {
+          for( TypeFld fld : ts._flds ) {
             if( ds.putIfAbsent(fld._t,d) == null &&  // Everything in flds is in the current depth
                 fld._t instanceof TypeMemPtr ) {
               TypeMemPtr tmp = (TypeMemPtr)fld._t;

@@ -1,12 +1,13 @@
 package com.cliffc.aa.type;
 
 import com.cliffc.aa.util.*;
-import static com.cliffc.aa.AA.unimpl;
-import static com.cliffc.aa.type.TypeFld.Access;
 
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashMap;
+
+import static com.cliffc.aa.AA.unimpl;
+import static com.cliffc.aa.type.TypeFld.Access;
 
 /**
    Memory type; the state of all of memory; memory edges order memory ops.
@@ -370,14 +371,14 @@ public class TypeMem extends Type<TypeMem> {
       // fields may be added which we assume is a pointer to all.
       if( ts._open )
         return BitsAlias.FULL;  // Generic open struct points to all
-      //for( int i=0; i<ts._ts.length; i++ ) {
-      //  Type fld = ts._ts[i];
-      //  if( TypeMemPtr.OOP.isa(fld) )
-      //    fld = TypeMemPtr.OOP;                      // All possible pointers
-      //  if( fld instanceof TypeFunPtr ) fld = ((TypeFunPtr)fld)._disp;
-      //  if( !(fld instanceof TypeMemPtr) ) continue; // Not a pointer, no more aliases
-      //  if( ((TypeMemPtr)fld)._aliases.test(1) )
-      //    return BitsAlias.FULL; // All possible pointers
+      for( TypeFld tfld : ts._flds ) {
+        Type fld = tfld._t;
+        if( TypeMemPtr.OOP.isa(fld) )
+          fld = TypeMemPtr.OOP;                      // All possible pointers
+        if( fld instanceof TypeFunPtr ) fld = ((TypeFunPtr)fld)._disp;
+        if( !(fld instanceof TypeMemPtr) ) continue; // Not a pointer, no more aliases
+        if( ((TypeMemPtr)fld)._aliases.test(1) )
+          return BitsAlias.FULL; // All possible pointers
       //  // Walk the possible pointers, and include them in the slice
       //  for( int ptralias : ((TypeMemPtr)fld)._aliases )
       //    for( int kid=ptralias; kid!=0; kid = BitsAlias.next_kid(ptralias,kid) )
@@ -385,8 +386,8 @@ public class TypeMem extends Type<TypeMem> {
       //        work.push(kid);
       //        aliases = aliases.set(kid);
       //      }
-      //}
-      throw unimpl();
+        throw unimpl();
+      }
     }
     assert !aliases.may_nil();
     return aliases;
@@ -539,12 +540,6 @@ public class TypeMem extends Type<TypeMem> {
       if( tos[i] != null )
         tos[i] = tos[i].flatten_fields();
     return make0(tos);
-  }
-  public boolean is_flattened() {
-    for( int i=1; i< _pubs.length; i++ )
-      if( _pubs[i]!=null && !_pubs[i].is_flattened() )
-        return false;
-    return true;
   }
 
   @Override public TypeMem widen() {

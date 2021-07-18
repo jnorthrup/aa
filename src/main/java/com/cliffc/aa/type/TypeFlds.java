@@ -111,6 +111,7 @@ public class TypeFlds {
   }
 
   // Result not interned; suitable for direct hacking.
+  // All TypeFlds are new, not-interned and suitable for direct hacking.
   // Original assumed in-use, not freed.
   public static TypeFld[] clone(TypeFld[] ts) {
     TypeFld[] ts2 = tary(ts.length).get();
@@ -119,4 +120,10 @@ public class TypeFlds {
     return ts2;
   }
 
+  // Result not interned; suitable for direct hacking.
+  public static TypeFld[] copyOf(TypeFld[] flds, int len) {
+    TypeFld[] flds2 = tary(len).get();
+    System.arraycopy(flds,0,flds2,0,Math.min(flds.length,len));
+    return flds2;
+  }
 }

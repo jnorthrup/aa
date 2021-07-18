@@ -95,7 +95,7 @@ public class TestLive {
     mem.xliv(GVNGCM.Mode.PesiNoCG);
     assertEquals(mem._live,expected_live); // Object demands of OProj, but OProj passes along request to NewObj
     nnn.xliv(GVNGCM.Mode.PesiNoCG);
-    assertEquals(TypeMem.ALIVE,nnn._live); // NewObj supplies object, needs what its input needs
+    assertEquals(expected_live,nnn._live); // NewObj supplies object, needs what its input needs
     mmm.xliv(GVNGCM.Mode.PesiNoCG);
     assertEquals(TypeMem.ALIVE,mmm._live); // Since ptr is scalar, all memory is alive
     fdx.xliv(GVNGCM.Mode.PesiNoCG);

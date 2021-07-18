@@ -49,8 +49,8 @@ These can be scope-alloced from a free-list.
 
 
  */
-public class TypeStruct extends TypeObj<TypeStruct> implements Iterable<TypeFld> {
-  private TypeFld[] _flds;      // The fields
+public class TypeStruct extends TypeObj<TypeStruct> {
+  public TypeFld[] _flds;       // The fields.  Effectively final.  Public for iteration.
   public boolean _open; // Fields after _fld.length are treated as ALL (or ANY)
 
   public boolean _cyclic; // Type is cyclic.  This is a summary property, not a description of value sets, hence is not in the equals or hash
@@ -991,25 +991,16 @@ public class TypeStruct extends TypeObj<TypeStruct> implements Iterable<TypeFld>
   // Extend the current struct with a new named field
   public TypeStruct add_fld( String name, Access mutable ) { return add_fld(name,mutable,Type.SCALAR); }
   public TypeStruct add_fld( String name, Access mutable, Type tfld ) {
-    //assert name==null || fldBot(fname) || fld_find(name)==-1;
-    //assert !_any && _open;
-    //
-    //Type  []   ts = Types.copyOf(_ts   ,_ts   .length+1);
-    //String[] flds = Arrays .copyOf(_flds ,_flds .length+1);
-    //byte[]  flags = Arrays .copyOf(_flags,_flags.length+1);
-    //ts   [_ts.length] = tfld;
-    //flds [_ts.length] = name==null ? fldBot() : name;
-    //flags(flags,_ts.length, make_flag(mutable));
-    //return make(_any,flds,ts,flags,true);
-    throw unimpl();
+    assert name==null || Util.eq(name,TypeFld.fldBot) || fld_find(name)==-1;
+    assert !_any && _open;
+    TypeFld[] flds = TypeFlds.copyOf(_flds,_flds.length+1);
+    flds[_flds.length] = TypeFld.make(name==null ? TypeFld.fldBot : name,tfld,mutable,_flds.length);
+    return make(_name,_any,flds,true);
   }
-  public TypeStruct set_fld( int idx, Type t, Access ff ) {
-    //Type[] ts  = _ts;
-    //byte[] ffs = _flags;
-    //if( ts  [idx] != t  ) ( ts = Types.clone(_ts))[idx] = t;
-    //if( fmod(idx) != ff ) flags(ffs= _flags .clone(),idx,set_fmod(_flags[idx],ff));
-    //return make_from(_any,ts,ffs);
-    throw unimpl();
+  public TypeStruct set_fld( int i, Type t, Access ff ) {
+    TypeFld[] flds = TypeFlds.copyOf(_flds,_flds.length);
+    flds[i] = TypeFld.make(_flds[i]._fld,t,ff,_flds[i]._order);
+    return make_from(flds);
   }
 
   // ------ Utilities -------
@@ -1085,20 +1076,11 @@ public class TypeStruct extends TypeObj<TypeStruct> implements Iterable<TypeFld>
     throw unimpl();
   }
 
-  @Override boolean is_flattened() {
-    //for( int i=0; i<_ts.length; i++ )
-    //  if( _ts[i] != Type.XSCALAR &&
-    //      _ts[i] != Type.SCALAR  &&
-    //      _ts[i] != Type.NSCALR )
-    //    return false;
-    //return true;
-    throw unimpl();
-  }
   @Override TypeObj flatten_fields() {
-    //Type[] ts = Types.clone(_ts);
-    //Arrays.fill(ts, Type.SCALAR);
-    //return make_from(_any,ts,fbots(_ts.length));
-    throw unimpl();
+    TypeFld[] flds = TypeFlds.get(_flds.length);
+    for( int i=0; i<_flds.length; i++ )
+      flds[i] = _flds[i].make_from(Type.SCALAR,Access.bot());
+    return make_from(flds);
   }
 
   // Used during liveness propagation from Loads.
@@ -1147,15 +1129,6 @@ public class TypeStruct extends TypeObj<TypeStruct> implements Iterable<TypeFld>
     //return make_from(ts);
     throw unimpl();
   }
-
-  /** @return an iterator */
-  @NotNull @Override public Iterator<TypeFld> iterator() { return new Iter(); }
-  private class Iter implements Iterator<TypeFld> {
-    int _i=0;
-    @Override public boolean hasNext() { return _i<_flds.length; }
-    @Override public TypeFld next() { return _flds[_i++]; }
-  }
-
 
   // True if isBitShape on all bits
   @Override public byte isBitShape(Type t) {
