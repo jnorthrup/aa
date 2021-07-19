@@ -94,7 +94,7 @@ public class CallNode extends Node {
   Parse[] _badargs;         // Errors for e.g. wrong arg counts or incompatible args; one error point per arg.
   public CallNode( boolean unpacked, Parse[] badargs, Node... defs ) {
     super(OP_CALL,defs);
-    assert defs[DSP_IDX]==null || defs[DSP_IDX]._val==Type.ANY || defs[DSP_IDX]._val==Type.ALL || defs[DSP_IDX]._val instanceof TypeMemPtr; // Temp; not required
+    assert defs[DSP_IDX]==null || defs[DSP_IDX]._val==Type.ALL || defs[DSP_IDX]._val==Type.XNIL || defs[DSP_IDX]._val==Type.NIL || defs[DSP_IDX]._val instanceof TypeMemPtr; // Temp; not required
     assert defs.length > DSP_IDX+1;
     _rpc = BitsRPC.new_rpc(BitsRPC.ALL); // Unique call-site index
     _unpacked=unpacked;         // Arguments are typically packed into a tuple and need unpacking, but not always
@@ -608,7 +608,7 @@ public class CallNode extends Node {
   TypeMem live_use_call( int dfidx ) {
     Type tcall = _val;
     if( !(tcall instanceof TypeTuple) )
-      return tcall.above_center() ? TypeMem.DEAD : TypeMem.NO_DISP;
+      return tcall.above_center() ? TypeMem.DEAD : TypeMem.LNO_DISP;
     TypeFunPtr tfp = ttfp(tcall);
     // If resolve has chosen this dfidx, then the FunPtr is alive.
     BitsFun fidxs = tfp.fidxs();
@@ -617,7 +617,7 @@ public class CallNode extends Node {
     if( tfp.is_con() && !(fdx() instanceof FunPtrNode) )
       return TypeMem.DEAD; // Will be replaced by a constant
     // Otherwise the FIDX is alive
-    return TypeMem.NO_DISP;
+    return TypeMem.LNO_DISP;
   }
 
   // Amongst these choices return the least-cost.  Some or all might be invalid.

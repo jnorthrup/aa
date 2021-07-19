@@ -52,8 +52,8 @@ public class TypeLive extends TypeObj<TypeLive> {
   private static final int FLAG_WITH_DISP=2;
   public boolean is_ret() { return (_flags&FLAG_WITH_DISP)!=0; }
   
-  static final TypeLive NO_DISP= make(false,0 ); // no escape, no disp
-  static final TypeLive ESC_DISP= make(false,FLAG_ESCAPE); // escape, no disp
+  static final TypeLive NO_DISP= make(false,0 );          // no escape, no disp
+  static final TypeLive ESC_DISP=make(false,FLAG_ESCAPE); // escape, no disp
   static final TypeLive LIVE   = make(false,FLAG_WITH_DISP); // Basic alive
   static final TypeLive ESCAPE = make(false,FLAG_ESCAPE+FLAG_WITH_DISP); // Used as a call argument
   

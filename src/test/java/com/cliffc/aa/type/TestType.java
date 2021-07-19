@@ -291,7 +291,6 @@ public class TestType {
 
   @Test public void testFunction() {
     Type.init0(new HashMap<>());
-    Type ignore = TypeTuple.ANY; // Break class-loader cycle; load Tuple before Fun.
     PrimNode[] ignore2 = PrimNode.PRIMS(); // Force node
 
     TypeFunPtr gf = TypeFunPtr.GENERIC_FUNPTR;

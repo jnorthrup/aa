@@ -227,7 +227,7 @@ public class TypeMem extends Type<TypeMem> {
   public static final TypeMem EMPTY;// Every alias filled with anything
   public static final TypeMem  MEM; // FULL, except lifts REC, arrays, STR
   public static final TypeMem XMEM; //
-  public static final TypeMem DEAD, ALIVE, NO_DISP, ESC_NO_DISP, LIVE_BOT; // Sentinel for liveness flow; not part of lattice
+  public static final TypeMem DEAD, ALIVE, LNO_DISP, LESC_NO_DISP, LIVE_BOT; // Sentinel for liveness flow; not part of lattice
   public static final TypeMem ESCAPE; // Sentinel for liveness, where the value "escapes" the local scope
   public static final TypeMem ANYMEM,ALLMEM; // Every alias is unused (so above XOBJ or below OBJ)
   public static final TypeMem MEM_ABC, MEM_STR;
@@ -257,8 +257,8 @@ public class TypeMem extends Type<TypeMem> {
     // Sentinel for liveness flow; not part of lattice
     DEAD   = make_live(TypeLive.DEAD    );
     ALIVE  = make_live(TypeLive.LIVE    ); // Basic alive for all time
-    NO_DISP= make_live(TypeLive.NO_DISP);  // Basic alive, no display pointers
-    ESC_NO_DISP= make_live(TypeLive.ESC_DISP);  // Basic alive, no display pointers, and escapes.
+    LNO_DISP = make_live(TypeLive.NO_DISP);  // Basic alive, no display pointers
+    LESC_NO_DISP = make_live(TypeLive.ESC_DISP);  // Basic alive, no display pointers, and escapes.
     ESCAPE = make_live(TypeLive.ESCAPE  ); // Alive, plus escapes some call/memory
     LIVE_BOT=make_live(TypeLive.LIVE_BOT);
   }
@@ -322,7 +322,7 @@ public class TypeMem extends Type<TypeMem> {
 
   // True if this is a liveness value that is NO_DISP, ESC_NO_DISP or DEAD
   public boolean live_no_disp() {
-    return this==TypeMem.NO_DISP || this==TypeMem.ESC_NO_DISP || this==TypeMem.DEAD;
+    return this==TypeMem.LNO_DISP || this==TypeMem.LESC_NO_DISP || this==TypeMem.DEAD;
   }
 
   // Shallow meet of all possible loadable values.  Used in Node.value calls, so must be monotonic.

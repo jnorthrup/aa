@@ -146,7 +146,7 @@ public class NewObjNode extends NewNode<TypeStruct> {
     if( !(to instanceof TypeStruct) ) return to.above_center() ? TypeMem.DEAD : TypeMem.ESCAPE;
     int idx = _defs.find(def)-1;
     Type t = ((TypeStruct)to).at(idx);
-    return t.above_center() ? TypeMem.DEAD : (t==Type.NSCALR ? TypeMem.ESC_NO_DISP : TypeMem.ESCAPE);
+    return t.above_center() ? TypeMem.DEAD : (t==Type.NSCALR ? TypeMem.LESC_NO_DISP : TypeMem.ESCAPE);
   }
 
   //@Override public boolean unify( boolean test ) {

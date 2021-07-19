@@ -356,7 +356,7 @@ public class TypeStruct extends TypeObj<TypeStruct> {
     // been closed and just return that prior (unfinished) result.
     TypeStruct mt = MEETS0.get(TPair.set(this,that));
     if( mt != null ) return mt; // Cycle has been closed
-    mt = this.shallow_clone();
+    mt = this._clone();
     TypeStruct mx = that;
     MEETS0.put(new TPair(this,that),mt);
 
@@ -454,18 +454,10 @@ public class TypeStruct extends TypeObj<TypeStruct> {
     return null;
   }
 
-  // Make a deep clone of this TypeStruct that is not interned.
-  private TypeStruct shallow_clone() {
-    assert _cyclic;
-    TypeFld[] flds = TypeFlds.get(_flds.length);
-    TypeStruct tstr = malloc(_name,_any,flds,_open);
-    tstr._cyclic = true;
-    return tstr;
-  }
-  // Shallow clone, not interned.
+  // Shallow clone, not interned.  Fields are also cloned, but not deeper.
   private TypeStruct _clone() {
     assert interned();
-    TypeFld[] flds = TypeFlds.clone(_flds); // Deep field clone
+    TypeFld[] flds = TypeFlds.clone(_flds); // Shallow field clone
     TypeStruct t = malloc(_name,_any,flds,_open);
     t._hash = t.compute_hash();
     return t;
@@ -628,9 +620,8 @@ public class TypeStruct extends TypeObj<TypeStruct> {
       break;
     }
     case TSTRUCT:
-      if( old == TypeObj.OBJ ) { nt = TypeObj.OBJ; break; }
-      if( old == TypeObj.XOBJ  ) break; // No changes, take nt as it is
-      if( old == TypeObj.UNUSED) break;
+      if( old == TypeObj. OBJ || old == TypeObj.ISUSED ) { nt = old; break; }
+      if( old == TypeObj.XOBJ || old == TypeObj.UNUSED ) break; // No changes, take nt as it is
       if( !(old instanceof TypeStruct) ) throw AA.unimpl();
       TypeStruct ots = (TypeStruct)old, nts = (TypeStruct)nt;
       // Compute a new target length.  Generally size is unchanged, but will

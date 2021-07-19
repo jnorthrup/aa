@@ -4,7 +4,6 @@ import com.cliffc.aa.node.FunNode;
 import com.cliffc.aa.util.SB;
 import com.cliffc.aa.util.VBitSet;
 
-import java.util.Arrays;
 import java.util.function.Predicate;
 
 
@@ -80,7 +79,7 @@ public final class TypeFunPtr extends Type<TypeFunPtr> {
 
   public  static final TypeFunPtr GENERIC_FUNPTR = make(BitsFun.FULL,1,Type.ALL);
   public  static final TypeFunPtr EMPTY  = make(BitsFun.EMPTY,0,TypeMemPtr.NO_DISP);
-  static final TypeFunPtr[] TYPES = new TypeFunPtr[]{GENERIC_FUNPTR,EMPTY.dual()};
+  static final TypeFunPtr[] TYPES = new TypeFunPtr[]{GENERIC_FUNPTR,EMPTY};
 
   @Override protected TypeFunPtr xdual() {
     return new TypeFunPtr(_fidxs.dual(),_nargs,_disp.dual());
@@ -129,7 +128,11 @@ public final class TypeFunPtr extends Type<TypeFunPtr> {
   public int fidx() { return _fidxs.getbit(); } // Asserts internally single-bit
 
   @Override public boolean above_center() { return _fidxs.above_center() || (_fidxs.is_con() && _disp.above_center()); }
-  @Override public boolean may_be_con()   { return above_center() || is_con(); }
+  @Override public boolean may_be_con()   {
+    return _disp.may_be_con() &&
+      _fidxs.abit() > 1 &&
+      !is_forward_ref();
+  }
   @Override public boolean is_con()       {
     return _disp==TypeMemPtr.NO_DISP && // No display (could be constant display?)
       // Single bit covers all functions (no new children added, but new splits

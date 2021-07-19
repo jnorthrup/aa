@@ -166,7 +166,7 @@ public class TypeFld extends Type<TypeFld> {
     return oBot;
   }
 
-  public static final TypeFld NO_DISP = make("^",Type.ANY,Access.Final,0);
+  public static final TypeFld NO_DISP = make("^",Type.NIL,Access.Final,0);
 
   // Setting the type during recursive construction.
   public Type setX(Type t) {

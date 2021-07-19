@@ -3,6 +3,7 @@ package com.cliffc.aa.node;
 import com.cliffc.aa.Env;
 import com.cliffc.aa.GVNGCM;
 import com.cliffc.aa.type.*;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.*;
@@ -243,6 +244,7 @@ public class TestNodeSmall {
    *   2     3    [ int,flt]  [ int,XXX]   Low, not high, for all good args
    */
   @SuppressWarnings("unchecked")
+  @Ignore
   @Test public void testCallNodeResolve() {
     Env top = Env.top_scope();
     GVNGCM gvn = Env.GVN;

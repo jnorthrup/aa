@@ -101,8 +101,8 @@ public final class TypeMemPtr extends Type<TypeMemPtr> {
   public  static final TypeMemPtr STRUCT0= make(BitsAlias.RECORD_BITS0,TypeStruct.ALLSTRUCT);
   public  static final TypeMemPtr NILPTR = make(BitsAlias.NIL,TypeObj.ISUSED);
   public  static final TypeMemPtr EMTPTR = make(BitsAlias.EMPTY,TypeObj.UNUSED);
-  public static final TypeMemPtr DISP_SIMPLE= make(BitsAlias.RECORD_BITS0,TypeObj.ISUSED); // closed display
-  public  static final Type NO_DISP= Type.ANY;
+  public  static final TypeMemPtr DISP_SIMPLE= make(BitsAlias.RECORD_BITS0,TypeObj.ISUSED); // closed display
+  public  static final Type       NO_DISP= Type.NIL;
   static final Type[] TYPES = new Type[]{OOP0,STR0,STRPTR,ABCPTR,STRUCT,EMTPTR,DISPLAY,DISPLAY_PTR};
 
   @Override public boolean is_display_ptr() {
@@ -192,17 +192,16 @@ public final class TypeMemPtr extends Type<TypeMemPtr> {
       if( _obj.above_center() && nil==XNIL )  return XNIL;
       if( nil==NIL ) return NIL;
     }
-    return make(_aliases.meet(BitsAlias.NIL),nil==NIL ? TypeObj.ISUSED : _obj);
+    return make(_aliases.meet(BitsAlias.NIL),_obj);
   }
   // Used during approximations, with a not-interned 'this'.
   // Updates-in-place.
   public Type ax_meet_nil(Type nil) {
-    if( _aliases.isa(BitsAlias.NIL.dual()) ) {
-      if( _obj==TypeObj.XOBJ && nil==XNIL )  return XNIL;
+    if( _aliases.isa(BitsAlias.XNIL) ) {
+      if( _obj.above_center() && nil==XNIL )  return XNIL;
       if( nil==NIL ) return NIL;
     }
     _aliases = _aliases.meet(BitsAlias.NIL);
-    if( nil==NIL ) _obj = TypeObj.OBJ;
     return this;
   }
 

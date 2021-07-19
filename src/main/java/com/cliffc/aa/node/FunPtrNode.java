@@ -24,7 +24,7 @@ public final class FunPtrNode extends UnOrFunPtrNode {
   // unified, it forces equivalence in the same places.
   public  FunPtrNode( String name, RetNode ret, Node display ) { this(name,null,ret,display ); }
   // Explicitly, no display
-  public  FunPtrNode( String name, RetNode ret ) { this(name,null,ret, Env.ANY ); }
+  public  FunPtrNode( String name, RetNode ret ) { this(name,null,ret, Env.NIL ); }
   // Display (already fresh-loaded) but no name.
   public  FunPtrNode( RetNode ret, Node display ) { this(null,null,ret,display); }
   // For forward-refs only; super weak display & function.
@@ -120,7 +120,7 @@ public final class FunPtrNode extends UnOrFunPtrNode {
     return !opt_mode._CG ? TypeMem.ESCAPE : super.live(opt_mode);
   }
   @Override public TypeMem live_use(GVNGCM.Mode opt_mode, Node def ) {
-    return def==ret() ? TypeMem.ANYMEM : (_live==TypeMem.NO_DISP ? TypeMem.DEAD : TypeMem.ESCAPE);
+    return def==ret() ? TypeMem.ANYMEM : (_live==TypeMem.LNO_DISP ? TypeMem.DEAD : TypeMem.ESCAPE);
   }
 
   //@Override public TV2 new_tvar(String alloc_site) {
