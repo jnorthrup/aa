@@ -20,10 +20,38 @@ public class TypeTuple extends Type<TypeTuple> {
 
   // If visit is null, children have had their hash already computed.
   // If visit is not null, children need to be recursively visited.
+  private static int rot(int x, int k) { return (x<<k) | (x>>(32-k)); }
   @Override public int compute_hash( ) {
     int hash = TTUPLE+(_any?0:1);
-    for( Type t : _ts ) hash = (hash>>>17) | ((hash<<5) * t._hash);
-    return hash|1;
+    // Copied from http://burtleburtle.net/bob/c/lookup3.c
+    int i,a,b,c;
+    a = b = c = 0xdeadbeef + (_ts.length<<2) + hash;
+    for( i=0; i+2<_ts.length; i+=3 ) {
+      a += _ts[i+0]._hash;
+      b += _ts[i+1]._hash;
+      c += _ts[i+2]._hash;
+      a -= c;  a ^= rot(c, 4);  c += b;
+      b -= a;  b ^= rot(a, 6);  a += c;
+      c -= b;  c ^= rot(b, 8);  b += a;
+      a -= c;  a ^= rot(c,16);  c += b;
+      b -= a;  b ^= rot(a,19);  a += c;
+      c -= b;  c ^= rot(b, 4);  b += a;
+    }
+    switch(_ts.length-i) {
+    case 3: c += _ts[i+2]._hash;
+    case 2: b += _ts[i+1]._hash;
+    case 1: a += _ts[i+0]._hash;
+      c ^= b; c -= rot(b,14);
+      a ^= c; a -= rot(c,11);
+      b ^= a; b -= rot(a,25);
+      c ^= b; c -= rot(b,16);
+      a ^= c; a -= rot(c, 4);
+      b ^= a; b -= rot(a,14);
+      c ^= b; c -= rot(b,24);
+    case 0:
+      break;
+    }
+    return c;
   }
   @Override public boolean equals( Object o ) {
     if( this==o ) return true;
@@ -192,7 +220,7 @@ public class TypeTuple extends Type<TypeTuple> {
       ts[i] = ts[i].simple_ptr();
     return make0(_any,ts);
   }
-  
+
   @Override public TypeTuple widen() {
     Type[] ts = Types.get(_ts.length);
     for( int i=0; i<ts.length; i++ )

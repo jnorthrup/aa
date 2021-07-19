@@ -215,16 +215,6 @@ public class Type<T extends Type<T>> implements Cloneable {
       if( k.intern_check0() ) return false;
     return true;
   }
-  static void intern_hash_quality() {
-    NonBlockingHashMapLong<Integer> hashs = new NonBlockingHashMapLong<>();
-    for( Type k : INTERN.keySet() ) {
-      Integer ii = hashs.get(k._hash);
-      hashs.put(k._hash,ii==null ? 1 : ii+1);
-    }
-    for( long l : hashs.keySet() ) {
-      System.out.println("hash "+l+" repeats "+hashs.get(l));
-    }
-  }
   private boolean intern_check0() {
     Type v = INTERN.get(this);
     if( this == v && _dual!=null && _dual._dual==this ) return false;
@@ -334,14 +324,40 @@ public class Type<T extends Type<T>> implements Cloneable {
     static NonBlockingHashMap<Key,Type> INTERN_MEET = new NonBlockingHashMap<>();
     Key(Type a, Type b) { _a=a; _b=b; }
     Type _a, _b;
-    @Override public int hashCode() { return (_a._hash<<17)|(_a._hash>>15)|_b._hash; }
+    @Override public int hashCode() { return ((_a._hash<<17)|(_a._hash>>>15))^_b._hash; }
     @Override public boolean equals(Object o) { return _a==((Key)o)._a && _b==((Key)o)._b; }
     static Type get(Type a, Type b) {
       K._a=a;
       K._b=b;
       return INTERN_MEET.get(K);
     }
-    static void put(Type a, Type b, Type mt) { INTERN_MEET.put(new Key(a,b),mt); }
+    static void put(Type a, Type b, Type mt) {
+      INTERN_MEET.put(new Key(a,b),mt);
+      // Uncomment to check hash quality.
+      //Util.hash_quality_check_per(INTERN_MEET);
+    }
+    static void intern_meet_quality_check() {
+      NonBlockingHashMapLong<Integer> hashs = new NonBlockingHashMapLong<>();
+      for( Key k : INTERN_MEET.keySet() ) {
+        int hash = k.hashCode();
+        Integer ii = hashs.get(hash);
+        hashs.put(hash,ii==null ? 1 : ii+1);
+      }
+      int[] hist = new int[16];
+      int maxval=0;
+      long maxkey=-1;
+      for( long l : hashs.keySet() ) {
+        int reps = hashs.get(l);
+        if( reps > maxval ) { maxval=reps; maxkey=l; }
+        if( reps < hist.length ) hist[reps]++;
+        else System.out.println("hash "+l+" repeats "+reps);
+      }
+      for( int i=0; i<hist.length; i++ )
+        if( hist[i] > 0 )
+          System.out.println("Number of hashes with "+i+" repeats: "+hist[i]);
+      System.out.println("Max repeat key "+maxkey+" repeats: "+maxval);
+    }
+
   }
 
   // Compute the meet
