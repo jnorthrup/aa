@@ -111,7 +111,7 @@ public class TypeFlds {
   }
 
   // Result not interned; suitable for direct hacking.
-  // All TypeFlds are new, not-interned and suitable for direct hacking.
+  // All TypeFlds are cloned new, not-interned and suitable for direct hacking.
   // Original assumed in-use, not freed.
   public static TypeFld[] clone(TypeFld[] ts) {
     TypeFld[] ts2 = tary(ts.length).get();

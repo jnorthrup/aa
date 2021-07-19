@@ -465,11 +465,10 @@ public class TypeStruct extends TypeObj<TypeStruct> {
   // Shallow clone, not interned.
   private TypeStruct _clone() {
     assert interned();
-    TypeFld[] flds = TypeFlds.clone(_flds); // TODO: Deep field clone?
-    //TypeStruct t = malloc(_name,_any,flds,_open);
-    //t._hash = t.compute_hash();
-    //return t;
-    throw unimpl();
+    TypeFld[] flds = TypeFlds.clone(_flds); // Deep field clone
+    TypeStruct t = malloc(_name,_any,flds,_open);
+    t._hash = t.compute_hash();
+    return t;
   }
 
   // This is for a struct that has grown 'too deep', and needs to be

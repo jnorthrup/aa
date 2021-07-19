@@ -3,7 +3,6 @@ package com.cliffc.aa.node;
 import com.cliffc.aa.Env;
 import com.cliffc.aa.GVNGCM;
 import com.cliffc.aa.type.*;
-import com.cliffc.aa.util.NonBlockingHashMap;
 
 import static com.cliffc.aa.AA.*;
 import static com.cliffc.aa.Env.GVN;
@@ -331,9 +330,9 @@ public final class CallEpiNode extends Node {
     TypeMem post_call = (TypeMem)tmem;
 
     // If no memory projection, then do not compute memory
-    Type premem = call().mem()._val;
-    if( _keep==0 && ProjNode.proj(this,MEM_IDX)==null )
+    if( (_keep==0 && ProjNode.proj(this,MEM_IDX)==null) || call().mem()==null )
       return TypeTuple.make(Type.CTRL,TypeMem.ANYMEM,trez);
+    Type premem = call().mem()._val;
 
     // Build epilog memory.
 

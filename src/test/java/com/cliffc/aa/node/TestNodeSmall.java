@@ -467,7 +467,7 @@ public class TestNodeSmall {
           assertTrue(cvals.get(key0).isa(cvals.get(key1)));
 
 
-    
+
   }
 
   // When making a recursive function, we get a pointer cycle with the display
@@ -519,8 +519,8 @@ public class TestNodeSmall {
     // Parms for the Fun.  Note that the default type is "weak" because the
     // file-level display can not yet know about "fact".
     ParmNode parm_mem = new ParmNode(MEM_IDX," mem",fun,mem,null);
-    ParmNode parm_dsp = new ParmNode(DSP_IDX,"^"  ,fun,Type.SCALAR,Node.con(dsp_file_ptr._val),null);
     gvn.xform(parm_mem.add_def(dsp_file_obj));
+    ParmNode parm_dsp = new ParmNode(DSP_IDX,"^"  ,fun,Type.SCALAR,Node.con(dsp_file_ptr._val),null);
     gvn.xform(parm_dsp.add_def(dsp_file_ptr));
     // Close the function up
     RetNode ret = gvn.init(new RetNode(fun,parm_mem,parm_dsp,rpc,fun));
