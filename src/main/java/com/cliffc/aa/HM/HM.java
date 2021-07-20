@@ -1095,9 +1095,9 @@ public class HM {
     }
   }
 
-  // ?0
+  // EQ0
   static class EQ0 extends PrimSyn {
-    @Override String name() { return "?0"; }
+    @Override String name() { return "eq0"; }
     public EQ0() { super(INT64,BOOL); }
     @Override PrimSyn make() { return new EQ0(); }
     @Override Type apply( Syntax[] args) {
@@ -2086,7 +2086,8 @@ public class HM {
         if( ii==null )  VNAMES.put(this,ii=VCNT++); // Type-var name
         // 2nd and later visits use the short form
         boolean later = visit.tset(_uid);
-        if( later ) sb.p('$');
+        // Removed as being more confusing to more academic readers
+        //if( later ) sb.p('$'); 
         char c = (char)('A'+ii);
         if( c<'V' ) sb.p(c); else sb.p("V"+ii);
         if( later ) return sb;
@@ -2122,7 +2123,9 @@ public class HM {
             args(i)._p(sb.p(' ').p(_ids[i]).p(" = "),visit,dups).p(',');
           sb.unchar().p("}");
         }
-        return _alias.str(sb);
+        //return _alias.str(sb);
+        if( _alias.test(0) ) sb.p('?');
+        return sb;
       }
 
       // Generic structural T2: (fun arg0 arg1...)
