@@ -82,7 +82,7 @@ public class HM {
     Worklist work = new Worklist();
     PrimSyn.WORK=work;
 
-    for( PrimSyn prim : new PrimSyn[]{new If(), new Pair1(), new Pair(), new EQ(), new EQ0(), new Mul(), new Dec(), new Str(), new Triple(), new Factor(), new IsEmpty(), new NotNil()} )
+    for( PrimSyn prim : new PrimSyn[]{new If(), new Pair1(), new Pair(), new EQ(), new EQ0(), new Mul(), new Add(), new Dec(), new Str(), new Triple(), new Factor(), new IsEmpty(), new NotNil()} )
       PRIMSYNS.put(prim.name(),prim);
 
     // Parse
@@ -252,7 +252,7 @@ public class HM {
   }
   private static boolean isWS    (byte c) { return c == ' ' || c == '\t' || c == '\n' || c == '\r'; }
   private static boolean isDigit (byte c) { return '0' <= c && c <= '9'; }
-  private static boolean isAlpha0(byte c) { return ('a'<=c && c <= 'z') || ('A'<=c && c <= 'Z') || (c=='_') || (c=='*') || (c=='?'); }
+  private static boolean isAlpha0(byte c) { return ('a'<=c && c <= 'z') || ('A'<=c && c <= 'Z') || (c=='_') || (c=='*') || (c=='?') || (c=='+'); }
   private static boolean isAlpha1(byte c) { return isAlpha0(c) || ('0'<=c && c <= '9') || (c=='/'); }
   private static void require(char c) { if( skipWS()!=c ) throw unimpl("Missing '"+c+"'"); X++; }
   private static <T> T require(char c, T t) { require(c); return t; }
@@ -1223,6 +1223,24 @@ public class HM {
     }
   }
 
+  // add integers
+  static class Add extends PrimSyn {
+    @Override String name() { return "+"; }
+    public Add() { super(INT64,INT64,INT64); }
+    @Override PrimSyn make() { return new Add(); }
+    @Override Type apply( Syntax[] args) {
+      Type t0 = args[0]._flow;
+      Type t1 = args[1]._flow;
+      if( t0.above_center() || t1.above_center() )
+        return TypeInt.INT64.dual();
+      if( t0 instanceof TypeInt && t1 instanceof TypeInt ) {
+        if( t0.is_con() && t1.is_con() )
+          return TypeInt.con(t0.getl()+t1.getl());
+      }
+      return TypeInt.INT64;
+    }
+  }
+
   // decrement
   static class Dec extends PrimSyn {
     @Override String name() { return "dec"; }
@@ -2087,7 +2105,7 @@ public class HM {
         // 2nd and later visits use the short form
         boolean later = visit.tset(_uid);
         // Removed as being more confusing to more academic readers
-        //if( later ) sb.p('$'); 
+        //if( later ) sb.p('$');
         char c = (char)('A'+ii);
         if( c<'V' ) sb.p(c); else sb.p("V"+ii);
         if( later ) return sb;

@@ -283,7 +283,7 @@ public class TestHM {
 
   // try the worse-case expo blow-up test case from SO
   @Test public void test35() {
-    TypeFunPtr tfp  = TypeFunPtr.make(15,3,Type.ANY);
+    TypeFunPtr tfp  = TypeFunPtr.make(16,3,Type.ANY);
     TypeMemPtr tmp0 = TypeMemPtr.make(8,make_tups(tfp ,tfp ,tfp ));
     TypeMemPtr tmp1 = TypeMemPtr.make(8,make_tups(tmp0,tmp0,tmp0));
     TypeMemPtr tmp2 = TypeMemPtr.make(8,make_tups(tmp1,tmp1,tmp1));
@@ -475,8 +475,8 @@ public class TestHM {
     if( HM.DO_HM )
       assertEquals("{ A -> ( 3, nint8) }",syn._hmt.p());
     if( HM.DO_GCP )
-      if( HM.DO_HM ) tfs(TypeMemPtr.make(7,TypeStruct.make(TypeInt.con(3), TypeInt.NINT8 )));
-      else           tfs(TypeMemPtr.make(7,TypeStruct.make(TypeInt.NINT8 , TypeInt.NINT8 )));
+      if( HM.DO_HM ) assertEquals(tfs(TypeMemPtr.make(7,make_tups(TypeInt.con(3), TypeInt.NINT8 ))),syn.flow_type());
+      else           assertEquals(tfs(TypeMemPtr.make(7,make_tups(TypeInt.NINT8 , TypeInt.NINT8 ))),syn.flow_type());
   }
 
   // map is parametric in nil-ness.  Verify still nil-checking.
@@ -490,8 +490,25 @@ public class TestHM {
     if( HM.DO_HM )
       assertEquals("{ A -> May be nil when loading field x }",syn._hmt.p());
     if( HM.DO_GCP )
-      if( HM.DO_HM ) tfs(TypeMemPtr.make(7,TypeStruct.make(TypeInt.con(3), TypeInt.NINT8 )));
-      else           tfs(TypeMemPtr.make(7,TypeStruct.make(TypeInt.NINT8 , TypeInt.NINT8 )));
+      if( HM.DO_HM ) assertEquals(tfs(TypeMemPtr.make(7,make_tups(TypeInt.NINT8, TypeInt.NINT8 ))),syn.flow_type());
+      else           assertEquals(tfs(TypeMemPtr.make(7,make_tups(TypeInt.NINT8, TypeInt.NINT8 ))),syn.flow_type());
+  }
+
+  @Test public void test51() {
+    Root syn = HM.hm("total_size = { a as ->" +  // Total_size takes an 'a' and a list of 'as'
+                     "  (if as "+                // If list is not empty then
+                     "      (+ .size a "+        // Add the size of 'a' to
+                     "         (total_size .val as .next as))" + // the size of the rest of the list
+                     "      .size a"+            // If the list is empty, just take the a.size
+                     "  )"+                      // End of (if as...)
+                     "};" +                      // End of total_size={...}
+                     "total_size"                // What is this type?
+                     );
+    if( HM.DO_HM )
+      assertEquals("{ A:@{ size = int64} B:@{ next = B, val = A}? -> int64 }",syn._hmt.p());
+    if( HM.DO_GCP )
+      if( HM.DO_HM ) assertEquals(tfs(TypeInt.INT64),syn.flow_type());
+      else           assertEquals(tfs(Type.SCALAR   ),syn.flow_type());
   }
 
 }
