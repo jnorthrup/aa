@@ -52,12 +52,15 @@ import static com.cliffc.aa.type.TypeFld.Access;
 //
 // The combined algorithm includes transfer functions taking facts from both
 // MAF lattices, producing results in the other lattice.
-
+//
 // For the GCP->HM direction, the HM 'if' has a custom transfer function
 // instead of the usual one.  Unification looks at the GCP value, and unifies
 // either the true arm, or the false arm, or both or neither.  In this way GCP
 // allows HM to avoid picking up constraints from dead code.
-
+//
+// Also for GCP->HM, the HM ground terms or base terms include anything from
+// the GCP lattice.
+//
 // For the HM->GCP direction, the GCP 'apply' has a customer transfer function
 // where the result from a call gets lifted (JOINed) based on the matching GCP
 // inputs - and the match comes from using the same HM type-var on both inputs
@@ -67,6 +70,15 @@ import static com.cliffc.aa.type.TypeFld.Access;
 //
 // Test case 45 demonstrates this combined algorithm, with a program which can
 // only be typed using the combination of GCP and HM.
+//
+// BNF for the "core AA" syntax:
+//    e  = number | string | primitives | (fe0 fe1*) | { id* -> fe0 } | id | id = fe0; fe1 | @{ (label = fe0)* }
+//    fe = e | e.label                 // optional field after expression
+//
+// BNF for the "core AA" pretty-printed types:
+//    T = X | X:T | { X* -> X } | base | (X0 X1) | @{ (label = X)* } | Error
+//    base = any lattice element
+//
 
 public class HM {
   // Mapping from primitive name to PrimSyn
