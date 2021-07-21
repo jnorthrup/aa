@@ -76,7 +76,7 @@ import static com.cliffc.aa.type.TypeFld.Access;
 //    fe = e | e.label                 // optional field after expression
 //
 // BNF for the "core AA" pretty-printed types:
-//    T = X | X:T | { X* -> X } | base | (X0 X1) | @{ (label = X)* } | Error
+//    T = X | X:T | { X* -> X } | base | (X0 X1) | @{ (label = X)* } | T? | Error
 //    base = any lattice element
 //
 
