@@ -210,15 +210,15 @@ public class TestHM {
                                    ); }
 
   // Basic field test
-  @Test public void test26() { run(".x @{x =2, y =3}",
+  @Test public void test26() { run("@{x =2, y =3}.x",
                                    "2", TypeInt.con(2)); }
 
   // Basic field test
-  @Test public void test27() { run(".x 5",
+  @Test public void test27() { run("5.x",
                                    "Missing field x in 5", Type.SCALAR); }
 
   // Basic field test.
-  @Test public void test28() { run(".x @{ y =3}",
+  @Test public void test28() { run("@{ y =3}.x",
                                    "Missing field x in @{ y = 3}",
                                    Type.SCALAR); }
 
@@ -226,12 +226,12 @@ public class TestHM {
                                    "{ A -> @{ x = A, y = A} }", tfs(tuple9)); }
 
   // Load common field 'x', ignoring mismatched fields y and z
-  @Test public void test30() { run("{ pred -> .x (if pred @{x=2,y=3} @{x=3,z= \"abc\"}) }",
+  @Test public void test30() { run("{ pred -> (if pred @{x=2,y=3} @{x=3,z= \"abc\"}) .x }",
                                    "{ A -> nint8 }", tfs(TypeInt.NINT8)); }
 
   // Load some fields from an unknown struct: area of a rectangle.
   // Since no nil-check, correctly types as needing a not-nil input.
-  @Test public void test31() { run("{ sq -> (* .x sq .y sq) }", // { sq -> sq.x * sq.y }
+  @Test public void test31() { run("{ sq -> (* sq.x sq.y) }", // { sq -> sq.x * sq.y }
                                    "{ @{ x = int64, y = int64} -> int64 }", tfs(TypeInt.INT64)); }
 
   private static TypeMemPtr build_cycle( int alias, boolean nil, Type fld ) {
@@ -252,7 +252,7 @@ public class TestHM {
   // no exit (its an infinite loop, endlessly reading from an infinite input
   // and writing an infinite output), gcp gets a cyclic approximation.
   @Test public void test32() {
-    Root syn = HM.hm("map = { fcn lst -> @{ n1 = (map fcn .n0 lst), v1 = (fcn .v0 lst) } }; map");
+    Root syn = HM.hm("map = { fcn lst -> @{ n1 = (map fcn lst.n0), v1 = (fcn lst.v0) } }; map");
     if( HM.DO_HM )
       assertEquals("{ { A -> B } C:@{ n0 = C, v0 = A} -> D:@{ n1 = D, v1 = B} }",syn._hmt.p());
     if( HM.DO_GCP )
@@ -264,7 +264,7 @@ public class TestHM {
   // has the output memory alias, but not the input memory alias (which must be
   // made before calling 'map').
   @Test public void test33() {
-    Root syn = HM.hm("map = { fcn lst -> (if lst @{ n1=(map fcn .n0 lst), v1=(fcn .v0 lst) } 0) }; map");
+    Root syn = HM.hm("map = { fcn lst -> (if lst @{ n1=(map fcn lst.n0), v1=(fcn lst.v0) } 0) }; map");
     if( HM.DO_HM )
       assertEquals("{ { A -> B } C:@{ n0 = C, v0 = A}? -> D:@{ n1 = D, v1 = B}? }",syn._hmt.p());
     if( HM.DO_GCP )
@@ -274,7 +274,7 @@ public class TestHM {
 
   // Recursive linked-list discovery, with no end clause
   @Test public void test34() {
-    Root syn = HM.hm("map = { fcn lst -> (if lst @{ n1 = (map fcn .n0 lst), v1 = (fcn .v0 lst) } 0) }; (map dec @{n0 = 0, v0 = 5})");
+    Root syn = HM.hm("map = { fcn lst -> (if lst @{ n1 = (map fcn lst.n0), v1 = (fcn lst.v0) } 0) }; (map dec @{n0 = 0, v0 = 5})");
     if( HM.DO_HM )
       assertEquals("A:@{ n1 = A, v1 = int64}?",syn._hmt.p());
     if( HM.DO_GCP )
@@ -300,7 +300,7 @@ public class TestHM {
   // Need to see if a map call, inlined a few times, 'rolls up'.  Sometimes
   // rolls up, sometimes not; depends on worklist visitation order.
   @Test public void test36() {
-    Root syn = HM.hm("map = { lst -> (if lst @{ n1= arg= .n0 lst; (if arg @{ n1=(map .n0 arg), v1=(str .v0 arg)} 0), v1=(str .v0 lst) } 0) }; map");
+    Root syn = HM.hm("map = { lst -> (if lst @{ n1= arg= lst.n0; (if arg @{ n1=(map arg.n0), v1=(str arg.v0)} 0), v1=(str lst.v0) } 0) }; map");
     if( HM.DO_HM )
       assertEquals("{ A:@{ n0 = @{ n0 = A, v0 = int64}?, v0 = int64}? -> B:@{ n1 = @{ n1 = B, v1 = *[4]str}?, v1 = *[4]str}? }",syn._hmt.p());
     if( HM.DO_GCP ) {
@@ -334,13 +334,13 @@ public class TestHM {
 
   // Example from SimpleSub requiring 'x' to be both a struct with field
   // 'v', and also a function type - specifically disallowed in 'aa'.
-  @Test public void test38() { run("{ x -> y = ( x .v x ); 0}",
+  @Test public void test38() { run("{ x -> y = ( x x.v ); 0}",
                                    "{ Cannot unify @{ v = A} and { A -> B } -> 0 }", tfs(Type.XNIL)); }
 
   // Really bad flow-type: function can be called from the REPL with any
   // argument type - and the worse case will be an error.
   @Test public void test39() {
-    Root syn = HM.hm("x = { z -> z}; (x { y -> .u y})");
+    Root syn = HM.hm("x = { z -> z}; (x { y -> y.u})");
     if( HM.DO_HM )
       assertEquals("{ @{ u = A} -> A }",syn._hmt.p());
     if( HM.DO_GCP )
@@ -352,7 +352,7 @@ public class TestHM {
   // - a function which takes a struct with field 'u'
   // The first arg to x is two different kinds of functions, so fails unification.
   @Test public void test40() {
-    Root syn = HM.hm("x = w = (x x); { z -> z}; (x { y -> .u y})");
+    Root syn = HM.hm("x = w = (x x); { z -> z}; (x { y -> y.u})");
     if( HM.DO_HM )
       assertEquals("Cannot unify A:{ A -> A } and @{ u = A}",syn._hmt.p());
     if( HM.DO_GCP ) {
@@ -364,7 +364,7 @@ public class TestHM {
     }
   }
 
-  // Example from test15:
+  // Example from TestParse.test15:
   //   map={lst fcn -> lst ? fcn lst.1};
   //   in_int=(0,2);"+       // List of ints
   //   in_str=(0,"abc");" +  // List of strings
@@ -372,7 +372,7 @@ public class TestHM {
   //   out_bool= map(in_str,{str -> str==\"abc\"});"+ // Map over strs with str->bool conversion, returning a list of bools
   //   (out_str,out_bool)",
   @Test public void test41() {
-    Root syn = HM.hm("map={lst fcn -> (fcn .y lst) }; "+
+    Root syn = HM.hm("map={lst fcn -> (fcn lst.y) }; "+
                      "in_int=@{ x=0 y=2}; " +
                      "in_str=@{ x=0 y=\"abc\"}; " +
                      "out_str = (map in_int str); " +
@@ -389,7 +389,7 @@ public class TestHM {
 
   // CCP Can help HM
   @Test public void test42() {
-    Root syn = HM.hm("pred = 0; s1 = @{ x=\"abc\" }; s2 = @{ y=3.4 }; .y (if pred s1 s2)");
+    Root syn = HM.hm("pred = 0; s1 = @{ x=\"abc\" }; s2 = @{ y=3.4 }; (if pred s1 s2).y");
     if( HM.DO_HM ) {
       if( HM.DO_GCP )
         assertEquals("3.4000000953674316",syn._hmt.p());
@@ -402,7 +402,7 @@ public class TestHM {
 
   // The z-merge is ignored; the last s2 is a fresh (unmerged) copy.
   @Test public void test43() {
-    Root syn = HM.hm("pred = 0; s1 = @{ x=\"abc\" }; s2 = @{ y=3.4 }; z = (if pred s1 s2); .y s2");
+    Root syn = HM.hm("pred = 0; s1 = @{ x=\"abc\" }; s2 = @{ y=3.4 }; z = (if pred s1 s2); s2.y");
     if( HM.DO_HM )
       assertEquals("3.4000000953674316",syn._hmt.p());
     if( HM.DO_GCP )
@@ -452,15 +452,15 @@ public class TestHM {
 
 
   // Basic nil test
-  @Test public void test46() { run(".x 0",
+  @Test public void test46() { run("0.x",
                                    "May be nil when loading field x", Type.XSCALAR); }
 
   // Basic nil test
-  @Test public void test47() { run("{ pred -> .x (if pred @{x=3} 0)}",
+  @Test public void test47() { run("{ pred -> (if pred @{x=3} 0).x}",
                                    "{ A -> May be nil when loading field x }", tfs(TypeInt.con(3))); }
 
   // Basic uplifting after check
-  @Test public void test48() { run("{ pred -> tmp=(if pred @{x=3} 0); (if tmp .x tmp 4) }",
+  @Test public void test48() { run("{ pred -> tmp=(if pred @{x=3} 0); (if tmp tmp.x 4) }",
                                    "{ A -> nint8 }", tfs(TypeInt.NINT8)); }
 
 
@@ -468,8 +468,8 @@ public class TestHM {
   @Test public void test49() {
     Root syn = HM.hm("{ pred -> \n"+
                      "  map = { fun x -> (fun x) };\n" +
-                     "  (pair (map {str0 ->          .x str0   }          @{x = 3}   )\n" +
-                     "        (map {str1 -> (if str1 .x str1 4)} (if pred @{x = 5} 0))\n" +
+                     "  (pair (map {str0 ->          str0.x   }          @{x = 3}   )\n" +
+                     "        (map {str1 -> (if str1 str1.x 4)} (if pred @{x = 5} 0))\n" +
                      "  )\n"+
                      "}");
     if( HM.DO_HM )
@@ -483,8 +483,8 @@ public class TestHM {
   @Test public void test50() {
     Root syn = HM.hm("{ pred -> \n"+
                      "  map = { fun x -> (fun x) };\n" +
-                     "  (pair (map {str0 ->          .x str0   }          @{x = 3}   )\n" +
-                     "        (map {str1 ->          .x str1   } (if pred @{x = 5} 0))\n" +
+                     "  (pair (map {str0 ->          str0.x   }          @{x = 3}   )\n" +
+                     "        (map {str1 ->          str1.x   } (if pred @{x = 5} 0))\n" +
                      "  )\n"+
                      "}");
     if( HM.DO_HM )
@@ -497,9 +497,9 @@ public class TestHM {
   @Test public void test51() {
     Root syn = HM.hm("total_size = { a as ->" +  // Total_size takes an 'a' and a list of 'as'
                      "  (if as "+                // If list is not empty then
-                     "      (+ .size a "+        // Add the size of 'a' to
-                     "         (total_size .val as .next as))" + // the size of the rest of the list
-                     "      .size a"+            // If the list is empty, just take the a.size
+                     "      (+ a.size "+         // Add the size of 'a' to
+                     "         (total_size as.val as.next))" + // the size of the rest of the list
+                     "      a.size"+             // Else the list is empty, just take the a.size
                      "  )"+                      // End of (if as...)
                      "};" +                      // End of total_size={...}
                      "total_size"                // What is this type?

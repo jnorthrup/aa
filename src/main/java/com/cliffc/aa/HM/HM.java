@@ -145,7 +145,7 @@ public class HM {
   static Root parse( String s ) {
     X = 0;
     BUF = s.getBytes();
-    Syntax prog = term();
+    Syntax prog = fterm();
     if( skipWS() != -1 ) throw unimpl("Junk at end of program: "+new String(BUF,X,BUF.length-X));
     // Inject IF at root
     return new Root(prog);
@@ -157,9 +157,9 @@ public class HM {
 
     if( BUF[X]=='(' ) {         // Parse an Apply
       X++;                      // Skip paren
-      Syntax fun = term();
+      Syntax fun = fterm();
       Ary<Syntax> args = new Ary<>(new Syntax[1],0);
-      while( skipWS()!= ')' && X<BUF.length ) args.push(term());
+      while( skipWS()!= ')' && X<BUF.length ) args.push(fterm());
       require(')');
       // Guarding if-nil test inserts an upcast.  This is a syntatic transform only.
       if( fun instanceof If &&
@@ -176,7 +176,7 @@ public class HM {
       Ary<String> args = new Ary<>(new String[1],0);
       while( skipWS()!='-' ) args.push(id());
       require("->");
-      Syntax body = term();
+      Syntax body = fterm();
       require('}');
       return new Lambda(body,args.asAry());
     }
@@ -189,9 +189,9 @@ public class HM {
       }
       // Let expression; "id = term(); term..."
       X++;                      // Skip '='
-      Syntax def = term();
+      Syntax def = fterm();
       require(';');
-      return new Let(id,def,term());
+      return new Let(id,def,fterm());
     }
 
     // Structure
@@ -202,7 +202,7 @@ public class HM {
       Ary<Syntax> flds = new Ary<>(Syntax.class);
       while( skipWS()!='}' && X < BUF.length ) {
         String id = require('=',id());
-        Syntax fld = term();
+        Syntax fld = fterm();
         if( fld==null ) throw unimpl("Missing term for field "+id);
         ids .push( id);
         flds.push(fld);
@@ -212,13 +212,14 @@ public class HM {
       return new Struct(ids.asAry(),flds.asAry());
     }
 
-    // Field lookup is prefix or backwards: ".x term" instead of "term.x"
-    if( BUF[X]=='.' ) {
-      X++;
-      return new Field(id(),term());
-    }
-
     throw unimpl("Unknown syntax");
+  }
+  // Parse a term with an optional following field.
+  private static Syntax fterm() {
+    Syntax term=term();
+    if( term==null || skipWS()!='.' ) return term;
+    X++;
+    return new Field(id(),term);    
   }
   private static final SB ID = new SB();
   private static String id() {
@@ -235,6 +236,9 @@ public class HM {
     while( X<BUF.length && isDigit(BUF[X]) )
       sum = sum*10+BUF[X++]-'0';
     if( X>= BUF.length || BUF[X]!='.' )
+      return new Con(TypeInt.con(sum));
+    // Ambiguous '.' in: 2.3 vs 2.x (field load from a number)
+    if( X+1<BUF.length && isAlpha0(BUF[X+1]) )
       return new Con(TypeInt.con(sum));
     X++;
     float f = (float)sum;
