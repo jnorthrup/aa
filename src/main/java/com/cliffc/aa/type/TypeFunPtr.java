@@ -79,7 +79,7 @@ public final class TypeFunPtr extends Type<TypeFunPtr> {
 
   public  static final TypeFunPtr GENERIC_FUNPTR = make(BitsFun.FULL,1,Type.ALL);
   public  static final TypeFunPtr EMPTY  = make(BitsFun.EMPTY,0,TypeMemPtr.NO_DISP);
-  static final TypeFunPtr[] TYPES = new TypeFunPtr[]{GENERIC_FUNPTR,EMPTY};
+  static final TypeFunPtr[] TYPES = new TypeFunPtr[]{GENERIC_FUNPTR,EMPTY.dual()};
 
   @Override protected TypeFunPtr xdual() {
     return new TypeFunPtr(_fidxs.dual(),_nargs,_disp.dual());
@@ -130,7 +130,7 @@ public final class TypeFunPtr extends Type<TypeFunPtr> {
   @Override public boolean above_center() { return _fidxs.above_center() || (_fidxs.is_con() && _disp.above_center()); }
   @Override public boolean may_be_con()   {
     return _disp.may_be_con() &&
-      _fidxs.abit() > 1 &&
+      _fidxs.abit() != -1 &&
       !is_forward_ref();
   }
   @Override public boolean is_con()       {

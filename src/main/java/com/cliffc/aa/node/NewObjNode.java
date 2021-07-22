@@ -34,7 +34,7 @@ public class NewObjNode extends NewNode<TypeStruct> {
   public Node get(String name) { int idx = _ts.fld_find(name);  assert idx >= 0; return fld(idx); }
   public boolean exists(String name) { return _ts.fld_find(name)!=-1; }
   public boolean is_mutable(String name) {
-    return _ts.fld(_ts.fld_find(name))._access==Access.Final;
+    return _ts.fld(_ts.fld_find(name))._access==Access.RW;
   }
   //public Access mutable(String name) { return _ts.fmod(_ts.find(name)); }
 

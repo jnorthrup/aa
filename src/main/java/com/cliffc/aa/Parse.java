@@ -862,7 +862,7 @@ public class Parse implements Comparable<Parse> {
     require(')',oldx);          // Balanced closing paren
 
     // Build the tuple from gathered args
-    NewObjNode nn = new NewObjNode(false,BitsAlias.REC,TypeStruct.open(TypeFld.NO_DISP),Env.XNIL);
+    NewObjNode nn = new NewObjNode(false,BitsAlias.REC,TypeStruct.open(TypeMemPtr.NO_DISP),Env.XNIL);
     for( int i=0; i<args._len; i++ )
       nn.create_active((""+i).intern(),args.at(i).unkeep(),Access.Final);
     nn._fld_starts = bads.asAry();
@@ -1219,7 +1219,7 @@ public class Parse implements Comparable<Parse> {
             (t=typep(type_var)) == null) // Parse type, wrap ptrs
           t = Type.SCALAR;               // No type found, assume default
         if( flds.find(fld -> Util.eq(fld._fld,itok) ) != -1 ) throw unimpl(); // cannot use same field name twice
-        flds.add(TypeFld.make(tok,t,tmodf,flds._len));
+        flds.add(TypeFld.make(itok,t,tmodf,flds._len));
         if( !peek(';') ) break; // Final semi-colon is optional
       }
       return peek('}') ? TypeStruct.make("",false,flds.asAry(),true) : null;

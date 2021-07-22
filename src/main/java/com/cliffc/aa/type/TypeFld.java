@@ -19,6 +19,7 @@ public class TypeFld extends Type<TypeFld> {
 
   private TypeFld() { super(TFLD); }
   private TypeFld init( @NotNull String fld, Type t, Access access, int order ) {
+    assert !(t instanceof TypeFld);
     _fld=fld; _t=t; _access=access; _order=order;
     _hash = compute_hash();
     return this;
@@ -42,7 +43,8 @@ public class TypeFld extends Type<TypeFld> {
 
   @Override public SB str( SB sb, VBitSet dups, TypeMem mem, boolean debug ) {
     if( dups.tset(_uid) ) return sb.p('$'); // Break recursive printing cycle
-    sb.p(_fld).p(_access.toString());
+    if( !TypeStruct.isDigit(_fld.charAt(0)) )
+      sb.p(_fld).p(_access.toString()); // Do not print number-named fields for tuples
     return _t==null ? sb.p('!') : (_t==Type.SCALAR ? sb : _t.str(sb,dups,mem,debug));
   }
 
@@ -169,10 +171,20 @@ public class TypeFld extends Type<TypeFld> {
   public static final TypeFld NO_DISP = make("^",Type.NIL,Access.Final,0);
 
   // Setting the type during recursive construction.
-  public Type setX(Type t) {
-    if( _t==t) return t; // No change
-    assert _dual==null;  // Not interned
-    return (_t = t);
+  public TypeFld setX(Type t) {
+    assert !(t instanceof TypeFld);
+    if( _t==t) return this; // No change
+    assert _dual==null;     // Not interned
+    _t = t;
+    return this;
+  }
+  public TypeFld setX(Type t, Access access) {
+    assert !(t instanceof TypeFld);
+    if( _t==t && _access==access ) return this; // No change
+    assert _dual==null;     // Not interned
+    _t = t;
+    _access = access;
+    return this;
   }
 
   // If this is a display field

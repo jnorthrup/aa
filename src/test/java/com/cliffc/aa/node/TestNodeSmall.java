@@ -16,7 +16,7 @@ import static org.junit.Assert.assertTrue;
 
 public class TestNodeSmall {
 
-
+  @Ignore
   @Test public void testUnresolvedAdd() {
     Env top = Env.top_scope();
     GVNGCM gvn = Env.GVN;

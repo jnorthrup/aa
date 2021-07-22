@@ -21,6 +21,7 @@ public class TypeTuple extends Type<TypeTuple> {
   // If visit is null, children have had their hash already computed.
   // If visit is not null, children need to be recursively visited.
   private static int rot(int x, int k) { return (x<<k) | (x>>(32-k)); }
+  @SuppressWarnings("fallthrough")
   @Override public int compute_hash( ) {
     int hash = TTUPLE+(_any?0:1);
     // Copied from http://burtleburtle.net/bob/c/lookup3.c

@@ -94,7 +94,7 @@ public class CallNode extends Node {
   Parse[] _badargs;         // Errors for e.g. wrong arg counts or incompatible args; one error point per arg.
   public CallNode( boolean unpacked, Parse[] badargs, Node... defs ) {
     super(OP_CALL,defs);
-    assert defs[DSP_IDX]==null || defs[DSP_IDX]._val==Type.ALL || defs[DSP_IDX]._val==Type.XNIL || defs[DSP_IDX]._val==Type.NIL || defs[DSP_IDX]._val instanceof TypeMemPtr; // Temp; not required
+    assert defs[DSP_IDX]==null || defs[DSP_IDX]._val==Type.ALL || defs[DSP_IDX]._val==Type.ANY || defs[DSP_IDX]._val instanceof TypeMemPtr; // Temp; not required
     assert defs.length > DSP_IDX+1;
     _rpc = BitsRPC.new_rpc(BitsRPC.ALL); // Unique call-site index
     _unpacked=unpacked;         // Arguments are typically packed into a tuple and need unpacking, but not always

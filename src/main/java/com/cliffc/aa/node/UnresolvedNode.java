@@ -1,6 +1,7 @@
 package com.cliffc.aa.node;
 
 import com.cliffc.aa.*;
+import com.cliffc.aa.type.BitsFun;
 import com.cliffc.aa.type.Type;
 import com.cliffc.aa.type.TypeFunPtr;
 import com.cliffc.aa.util.Util;
@@ -55,14 +56,20 @@ public class UnresolvedNode extends UnOrFunPtrNode {
       }
       return t;
     case Opto:
-      Type tx = Type.ALL;
+      // If all inputs are TFPs, result is a high choice of TFPs, plus the
+      // normal join over displays.
+      BitsFun fidxs = BitsFun.EMPTY;
+      Type tdsp = Type.ALL;
+      int nargs = -1;
       for( Node fptr : _defs ) {
         Type td = fptr._val;
         if( !(td instanceof TypeFunPtr) ) return td.oob();
-        tx = tx.join(td);
+        TypeFunPtr tfp = (TypeFunPtr)td;
+        fidxs = fidxs.meet((tfp.above_center() ? tfp.dual() : tfp)._fidxs);
+        tdsp = tdsp.join(tfp._disp);
+        nargs = tfp._nargs;
       }
-      assert tx instanceof TypeFunPtr;
-      return tx;
+      return TypeFunPtr.make(fidxs.dual(),nargs,tdsp);
     default: throw com.cliffc.aa.AA.unimpl();
     }
   }

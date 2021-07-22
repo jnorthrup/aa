@@ -130,7 +130,7 @@ public class TypeStruct extends TypeObj<TypeStruct> {
     return true;
   }
 
-  private static boolean isDigit(char c) { return '0' <= c && c <= '9'; }
+  static boolean isDigit(char c) { return '0' <= c && c <= '9'; }
   private boolean is_tup() {
     if( _flds.length<=1 ) return true;
     return isDigit(_flds[1]._fld.charAt(0));
@@ -708,8 +708,11 @@ public class TypeStruct extends TypeObj<TypeStruct> {
         case TSTRUCT:           // Update all TypeStruct fields
           TypeStruct ts = (TypeStruct)t0;
           for( int i=0; i<ts._flds.length; i++ ) {
-            Type tfld = ts._flds[i]._t;
-            progress |= (tfld != (ts._flds[i].setX(ufind(tfld))));
+            Type tfld = ts._flds[i]._t, tfld2 = ufind(tfld);
+            if( tfld != tfld2 ) {
+              progress = true;
+              ts._flds[i].setX(tfld2);
+            }
           }
           break;
         default: break;
@@ -950,21 +953,25 @@ public class TypeStruct extends TypeObj<TypeStruct> {
     dull_cache.put(dull._aliases,dptr2);
     // walk all fields, copy unless TMP.
     for( int i=0; i<dts2._flds.length; i++ ) {
-      Type t = dts2._flds[i]._t;
+      TypeFld dts2_fld = dts2._flds[i];
+      Type t = dts2_fld._t;
       if( t instanceof TypeMemPtr ) // For TMP, recurse on dull pointers.
-        dts2._flds[i].setX(_sharp(mem,((TypeMemPtr)t),dull_cache));
+        dts2_fld.setX(_sharp(mem,((TypeMemPtr)t),dull_cache));
       if( t instanceof TypeFunPtr ) {
         TypeFunPtr tf = (TypeFunPtr)t;
         if( tf._disp == Type.ANY )
           continue;  // No pointer to sharpen
         TypeMemPtr dptr3 = _sharp(mem,(TypeMemPtr)tf._disp,dull_cache);
-        dts2._flds[i].setX(dptr3.interned()             // Sharp return?
-                           ? tf.make_from(dptr3)        // Make sharp TFP field
-                           : tf._sharpen_clone(dptr3)); // Make dull  TFP field
+        dts2_fld.setX(dptr3.interned()             // Sharp return?
+                      ? tf.make_from(dptr3)        // Make sharp TFP field
+                      : tf._sharpen_clone(dptr3)); // Make dull  TFP field
       }
     }
     if( !_is_sharp(dts2) ) return dptr2; // Return the work-in-progress
-    // Then copied fields are all sharp and interned.
+    // Then copied field typesare all sharp and interned.
+    // Intern the fields themselves.
+    for( int i=0; i<dts2._flds.length; i++ )
+      dts2._flds[i] = dts2._flds[i].hashcons_free();
     dull_cache.remove(dull._aliases);// Move the entry from dull cache to sharp cache
     TypeStruct sts = dts2.hashcons_free();
     return mem.sharput(dull,dull.make_from(sts));
@@ -1017,24 +1024,16 @@ public class TypeStruct extends TypeObj<TypeStruct> {
   @Override public TypeStruct st    (Access fin, String fld, Type val) { return update(fin,fld,val,true ); }
   private TypeStruct update(Access fin, String fld, Type val, boolean precise) {
     int idx = fld_find(fld);
-    if( idx == -1 )             // Unknown field, assume changes no fields
-      return this;
+    if( idx == -1 ) return this; // Unknown field, assume changes no fields
     // Pointers & Memory to a Store can fall during GCP, and go from r/w to r/o
     // and the StoreNode output must remain monotonic.  This means store
     // updates are allowed to proceed even if in-error.
-    //byte[] flags = _flags.clone();
-    //Type[] ts    = Types.clone(_ts);
-    //_update(flags,ts,fin,idx,val,precise);
-    //return malloc(_name,_any,_flds,ts,flags,_open).hashcons_free();
-    throw unimpl();
-  }
-  private static void _update( byte[] flags, Type[] ts, byte fin, int idx, Type val, boolean precise ) {
-    //short flag = flags(flags,idx);
-    //if( !is_modifable(fmod(flag)) ) { /*val=val.widen();*/ precise=false; }// Illegal store into final field
-    //ts[idx] =  precise ? val : ts[idx].meet(val);
-    //byte mod = precise ? fin : fmod(fmeet(flag,make_flag(fin)));
-    //flags(flags,idx,set_fmod(flags(flags,idx),mod));
-    throw unimpl();
+    if( fin==Access.Final || fin==Access.ReadOnly ) precise=false;
+    Type   pval = precise ? val : _flds[idx]._t.meet(val);
+    Access pfin = precise ? fin : _flds[idx]._access.meet(fin);
+    TypeFld[] flds = TypeFlds.copyOf(_flds,_flds.length);
+    flds[idx] = TypeFld.make(fld,pval,pfin,idx);
+    return malloc(_name,_any,flds,_open).hashcons_free();
   }
 
   // Keep the same basic type, and meet related fields.  Type error if basic
@@ -1076,13 +1075,14 @@ public class TypeStruct extends TypeObj<TypeStruct> {
   // Used during liveness propagation from Loads.
   // Fields not-loaded are not-live.
   @Override TypeObj remove_other_flds(String fld, Type live) {
-    //int idx = find(fld);
-    //if( idx == -1 ) return UNUSED; // No such field, so all fields will be XSCALAR so UNUSED instead
-    //Type[] ts = Types.get(_ts.length);
-    //Arrays.fill(ts,XSCALAR);
-    //ts[idx] = live;
-    //return make_from(_any,ts,fbots(_ts.length));
-    throw unimpl();
+    int idx = fld_find(fld);
+    if( idx == -1 ) return UNUSED; // No such field, so all fields will be XSCALAR so UNUSED instead
+    TypeFld[] flds = TypeFlds.clone(_flds);
+    for( int i=0; i<_flds.length; i++ ) {
+      if( i != idx ) flds[i] = flds[i].setX(XSCALAR,Access.bot());
+      flds[i] = flds[i].hashcons_free();
+    }
+    return make_from(flds);
   }
 
   boolean any_modifiable() {
@@ -1113,11 +1113,15 @@ public class TypeStruct extends TypeObj<TypeStruct> {
   }
   // Keep field names and orders.  Widen all field contents, including finals.
   @Override public TypeStruct widen() {
-    //Type[] ts = Types.clone(_ts);
-    //for( int i=0; i<ts.length; i++ )
-    //  ts[i] = _ts[i].widen();
-    //return make_from(ts);
-    throw unimpl();
+    boolean widen=false;
+    for( TypeFld fld : _flds )
+      if( fld._t.widen()!=fld._t )
+        { widen=true; break; }
+    if( !widen ) return this;
+    TypeFld[] flds = TypeFlds.clone(_flds);
+    for( int i=0; i<_flds.length; i++ )
+      flds[i] = flds[i].setX(_flds[i]._t.widen()).hashcons_free();
+    return make_from(flds);
   }
 
   // True if isBitShape on all bits

@@ -102,7 +102,7 @@ public final class TypeMemPtr extends Type<TypeMemPtr> {
   public  static final TypeMemPtr NILPTR = make(BitsAlias.NIL,TypeObj.ISUSED);
   public  static final TypeMemPtr EMTPTR = make(BitsAlias.EMPTY,TypeObj.UNUSED);
   public  static final TypeMemPtr DISP_SIMPLE= make(BitsAlias.RECORD_BITS0,TypeObj.ISUSED); // closed display
-  public  static final Type       NO_DISP= Type.NIL;
+  public  static final Type       NO_DISP= Type.ANY;
   static final Type[] TYPES = new Type[]{OOP0,STR0,STRPTR,ABCPTR,STRUCT,EMTPTR,DISPLAY,DISPLAY_PTR};
 
   @Override public boolean is_display_ptr() {

@@ -6,7 +6,6 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashMap;
 
-import static com.cliffc.aa.AA.unimpl;
 import static com.cliffc.aa.type.TypeFld.Access;
 
 /**
@@ -379,14 +378,13 @@ public class TypeMem extends Type<TypeMem> {
         if( !(fld instanceof TypeMemPtr) ) continue; // Not a pointer, no more aliases
         if( ((TypeMemPtr)fld)._aliases.test(1) )
           return BitsAlias.FULL; // All possible pointers
-      //  // Walk the possible pointers, and include them in the slice
-      //  for( int ptralias : ((TypeMemPtr)fld)._aliases )
-      //    for( int kid=ptralias; kid!=0; kid = BitsAlias.next_kid(ptralias,kid) )
-      //      if( !visit.tset(kid) ) {
-      //        work.push(kid);
-      //        aliases = aliases.set(kid);
-      //      }
-        throw unimpl();
+        // Walk the possible pointers, and include them in the slice
+        for( int ptralias : ((TypeMemPtr)fld)._aliases )
+          for( int kid=ptralias; kid!=0; kid = BitsAlias.next_kid(ptralias,kid) )
+            if( !visit.tset(kid) ) {
+              work.push(kid);
+              aliases = aliases.set(kid);
+            }
       }
     }
     assert !aliases.may_nil();
@@ -516,10 +514,9 @@ public class TypeMem extends Type<TypeMem> {
         TypeObj to = at(alias);
         if( !(to instanceof TypeStruct) ) return true;
         TypeStruct ts = (TypeStruct)to;
-        //int idx = ts.fld_find(fld);
-        //if( idx == -1 || ts.fmod(idx) != TypeStruct.FFNL )
-        //  return true;          // Cannot check for R/O here, because R/O can lift to R/W
-        throw unimpl();
+        int idx = ts.fld_find(fld);
+        if( idx == -1 || ts._flds[idx]._access != Access.Final )
+          return true;          // Cannot check for R/O here, because R/O can lift to R/W
       }
     }
     return false;
