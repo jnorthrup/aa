@@ -568,8 +568,7 @@ public class TypeStruct extends TypeObj<TypeStruct> {
     TypeFunPtr nt = OLD2APX.get(old);
     if( nt != null ) return ufind(nt);
     if( old._disp==Type.ANY )
-      // return old; // no ufind because its old
-      throw com.cliffc.aa.AA.unimpl();
+       return old; // no ufind because its old
 
     // Walk internal structure, meeting into the approximation
     TypeFunPtr nmp = (TypeFunPtr)old.clone();

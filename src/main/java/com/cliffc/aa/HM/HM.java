@@ -229,9 +229,11 @@ public class HM {
   // Parse a term with an optional following field.
   private static Syntax fterm() {
     Syntax term=term();
-    if( term==null || skipWS()!='.' ) return term;
-    X++;
-    return new Field(id(),term);    
+    while( true ) {
+      if( term==null || skipWS()!='.' ) return term;
+      X++;
+      term = new Field(id(),term);
+    }
   }
   private static final SB ID = new SB();
   private static String id() {
@@ -886,7 +888,7 @@ public class HM {
     final String _id;
     final Syntax _rec;
     Field( String id, Syntax str ) { _id=id; _rec =str; }
-    @Override SB str(SB sb) { return _rec.str(sb.p(".").p(_id).p(' ')); }
+    @Override SB str(SB sb) { return _rec.str(sb).p(".").p(_id); }
     @Override SB p1 (SB sb) { return sb.p(".").p(_id); }
     @Override SB p2(SB sb, VBitSet dups) { return _rec.p0(sb,dups); }
     @Override boolean hm(Worklist work) {
@@ -2141,12 +2143,12 @@ public class HM {
       // Special printing for structures: @{ fld0 = body, fld1 = body, ... }
       if( is_struct() ) {
         if( is_tuple() ) {
-          sb.p('(');
+          sb.p("( ");
           for( int i=0; i<_ids.length; i++ ) {
             int idx = Util.find(_ids,new String(new char[]{(char)('0'+i)}).intern());
             args(idx)._p(sb.p(' '),visit,dups).p(',');
           }
-          sb.unchar().p(')');
+          sb.unchar().p(")");
 
         } else {
           sb.p("@{");

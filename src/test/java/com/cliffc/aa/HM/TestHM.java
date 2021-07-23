@@ -511,4 +511,29 @@ public class TestHM {
       else           assertEquals(tfs(Type.SCALAR   ),syn.flow_type());
   }
 
+  @Test public void test52() {
+    Root syn = HM.hm("void = @{};"+
+                     "true = @{"+
+                     "  and= {b -> b}"+
+                     "  or = {b -> true}"+
+                     "  thenElse = {then else->(then void) }"+
+                     "};"+
+                     "false = @{"+
+                     "  and= {b -> false}"+
+                     "  or = {b -> b}"+
+                     "  thenElse = {then else->(else void) }"+
+                     "};"+
+                     "forceSubtyping ={b ->(if b true false)};"+
+                     "bool=@{true=(forceSubtyping 1), false=(forceSubtyping 0), force=forceSubtyping};"+
+                     "a=(bool.false.thenElse { x-> 3 } { y-> 4 });"+
+                     "b=(bool.false.thenElse { z->@{}} { z->@{}});"+
+                     "@{a=a,b=b, bool=bool}"+
+                     "");
+    if( HM.DO_HM )
+      assertEquals("@{ a = nint8, b = ), bool = @{ false = A:@{ and = { A -> A }, or = { A -> A }, thenElse = { { ) -> B } { ) -> B } -> B }}, force = { C -> D:@{ and = { D -> D }, or = { D -> D }, thenElse = { { ) -> E } { ) -> E } -> E }} }, true = F:@{ and = { F -> F }, or = { F -> F }, thenElse = { { ) -> G } { ) -> G } -> G }}}}",syn._hmt.p());
+    if( HM.DO_GCP )
+      if( HM.DO_HM ) assertEquals(tfs(TypeInt.INT64),syn.flow_type());
+      else           assertEquals(tfs(Type.SCALAR   ),syn.flow_type());
+  }
+
 }
