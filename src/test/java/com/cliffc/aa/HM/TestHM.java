@@ -416,7 +416,7 @@ public class TestHM {
       if( HM.DO_GCP )
         assertEquals("1.2000000476837158",syn._hmt.p());
       else
-        assertEquals("Cannot unify 1.2000000476837158 and )",syn._hmt.p());
+        assertEquals("Cannot unify 1.2000000476837158 and ()",syn._hmt.p());
     }
     if( HM.DO_GCP )
       assertEquals(TypeFlt.con(1.2f), syn.flow_type());
@@ -535,12 +535,12 @@ public class TestHM {
                      "");
     if( HM.DO_HM ) {
       /*  An indented version of this answer
-        @{ 
-          a = nint8, 
-          b = (), 
-          bool = @{ 
-            false =        A:@{ and = { A -> A }, or = { A -> A }, thenElse = { { () -> B } { () -> B } -> B } }, 
-            force = { C -> D:@{ and = { D -> D }, or = { D -> D }, thenElse = { { () -> E } { () -> E } -> E } } }, 
+        @{
+          a = nint8,
+          b = (),
+          bool = @{
+            false =        A:@{ and = { A -> A }, or = { A -> A }, thenElse = { { () -> B } { () -> B } -> B } },
+            force = { C -> D:@{ and = { D -> D }, or = { D -> D }, thenElse = { { () -> E } { () -> E } -> E } } },
             true =         F:@{ and = { F -> F }, or = { F -> F }, thenElse = { { () -> G } { () -> G } -> G } }
           }
         }
@@ -564,4 +564,10 @@ public class TestHM {
       assertEquals(TypeMemPtr.make(15,rez),syn.flow_type());
     }
   }
+
+
+  // 
+  @Test public void test53() { run( "{ x y -> (if x x y) }",
+                                    "{ A? A -> A }", tfs(Type.SCALAR));  }
+
 }

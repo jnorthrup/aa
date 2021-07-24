@@ -43,8 +43,8 @@ public class TypeFld extends Type<TypeFld> {
 
   @Override public SB str( SB sb, VBitSet dups, TypeMem mem, boolean debug ) {
     if( dups.tset(_uid) ) return sb.p('$'); // Break recursive printing cycle
-    if( !TypeStruct.isDigit(_fld.charAt(0)) )
-      sb.p(_fld).p(_access.toString()); // Do not print number-named fields for tuples
+    if( !TypeStruct.isDigit(_fld.charAt(0)) ) // Do not print number-named fields for tuples
+      _access.str(sb.p(_fld),debug);
     return _t==null ? sb.p('!') : (_t==Type.SCALAR ? sb : _t.str(sb,dups,mem,debug));
   }
 
@@ -132,8 +132,11 @@ public class TypeFld extends Type<TypeFld> {
       /*6*/"0123456",
     };
     Access meet(Access a) { return values[FMEET[ordinal()].charAt(a.ordinal())-'0']; }
-    private static final String[] STRS = new String[]{"==",":=","=","~=","!:=!","!=!","!~=!"};
-    @Override public String toString() { return STRS[ordinal()]; }
+    private static final String[] SHORTS = new String[]{"==",":=","=","~=","!:=!","!=!","!~=!"};
+    private static final String[] LONGS  = new String[]{"read-only","read/write","final","noaccess","!:=!","!=!","!~=!"};
+    @Override public String toString() { return LONGS[ordinal()]; }
+    public SB str(SB sb, boolean debug) { return sb.p((debug ? SHORTS : LONGS)[ordinal()]); }
+
   };
 
   // Field names

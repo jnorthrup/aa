@@ -18,6 +18,8 @@ public class TestParse {
 
   // temp/junk holder for "instant" junits, when debugged moved into other tests
   @Test public void testParse() {
+    test_obj("(1,2,3)",
+      TypeStruct.make(TypeStruct.tups(TypeInt.con(1),TypeInt.con(2),TypeInt.con(3))));
     // TODO:
     // TEST for merging str:[7+43+44] and another concrete fcn, such as {&}.
     // The Meet loses precision to fast.  This is a typing bug.

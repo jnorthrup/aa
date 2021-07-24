@@ -1177,7 +1177,6 @@ public class HM {
       if( arg.is_fun() || ret.is_fun() )
         throw unimpl();         // Strip nil from fidxs
 
-
       // One or the other is a struct.
       assert arg.is_struct() || ret.is_struct();
       // See if the input and outputs vary anywhere
@@ -2143,12 +2142,13 @@ public class HM {
       // Special printing for structures: @{ fld0 = body, fld1 = body, ... }
       if( is_struct() ) {
         if( is_tuple() ) {
-          sb.p("( ");
+          if( _ids.length == 0 ) return sb.p("()");
+          sb.p('(');
           for( int i=0; i<_ids.length; i++ ) {
             int idx = Util.find(_ids,new String(new char[]{(char)('0'+i)}).intern());
             args(idx)._p(sb.p(' '),visit,dups).p(',');
           }
-          sb.unchar().p(")");
+          sb.unchar().p(')');
 
         } else {
           sb.p("@{");
