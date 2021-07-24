@@ -511,29 +511,57 @@ public class TestHM {
       else           assertEquals(tfs(Type.SCALAR   ),syn.flow_type());
   }
 
+  // Create a boolean-like structure, and unify.
   @Test public void test52() {
-    Root syn = HM.hm("void = @{};"+
-                     "true = @{"+
+    Root syn = HM.hm("void = @{};"+              // Same as '()'; all empty structs are alike
+                     "true = @{"+                // 'true' is a struct with and,or,thenElse
                      "  and= {b -> b}"+
                      "  or = {b -> true}"+
                      "  thenElse = {then else->(then void) }"+
                      "};"+
-                     "false = @{"+
+                     "false = @{"+               // 'false' is a struct with and,or,thenElse
                      "  and= {b -> false}"+
                      "  or = {b -> b}"+
                      "  thenElse = {then else->(else void) }"+
                      "};"+
-                     "forceSubtyping ={b ->(if b true false)};"+
+                     "forceSubtyping ={b ->(if b true false)};"+ // A unified version
+                     // Trying really hard here to unify 'true' and 'false'
                      "bool=@{true=(forceSubtyping 1), false=(forceSubtyping 0), force=forceSubtyping};"+
+                     // Apply the unified 'false' to two different return contexts
                      "a=(bool.false.thenElse { x-> 3 } { y-> 4 });"+
                      "b=(bool.false.thenElse { z->@{}} { z->@{}});"+
+                     // Look at the results
                      "@{a=a,b=b, bool=bool}"+
                      "");
-    if( HM.DO_HM )
-      assertEquals("@{ a = nint8, b = ), bool = @{ false = A:@{ and = { A -> A }, or = { A -> A }, thenElse = { { ) -> B } { ) -> B } -> B }}, force = { C -> D:@{ and = { D -> D }, or = { D -> D }, thenElse = { { ) -> E } { ) -> E } -> E }} }, true = F:@{ and = { F -> F }, or = { F -> F }, thenElse = { { ) -> G } { ) -> G } -> G }}}}",syn._hmt.p());
-    if( HM.DO_GCP )
-      if( HM.DO_HM ) assertEquals(tfs(TypeInt.INT64),syn.flow_type());
-      else           assertEquals(tfs(Type.SCALAR   ),syn.flow_type());
+    if( HM.DO_HM ) {
+      /*  An indented version of this answer
+        @{ 
+          a = nint8, 
+          b = (), 
+          bool = @{ 
+            false =        A:@{ and = { A -> A }, or = { A -> A }, thenElse = { { () -> B } { () -> B } -> B } }, 
+            force = { C -> D:@{ and = { D -> D }, or = { D -> D }, thenElse = { { () -> E } { () -> E } -> E } } }, 
+            true =         F:@{ and = { F -> F }, or = { F -> F }, thenElse = { { () -> G } { () -> G } -> G } }
+          }
+        }
+       */
+      assertEquals("@{ a = nint8, b = (), bool = @{ false = A:@{ and = { A -> A }, or = { A -> A }, thenElse = { { () -> B } { () -> B } -> B }}, force = { C -> D:@{ and = { D -> D }, or = { D -> D }, thenElse = { { () -> E } { () -> E } -> E }} }, true = F:@{ and = { F -> F }, or = { F -> F }, thenElse = { { () -> G } { () -> G } -> G }}}}",syn._hmt.p());
+    }
+    if( HM.DO_GCP ) {
+      Type tf   = TypeMemPtr.make(BitsAlias.FULL.make(10,11),
+                                  TypeStruct.make(TypeFld.NO_DISP,
+                                                  TypeFld.make("and"     ,TypeFunPtr.make(BitsFun.make0(15,18),1,TypeMemPtr.NO_DISP),1),
+                                                  TypeFld.make("or"      ,TypeFunPtr.make(BitsFun.make0(16,19),1,TypeMemPtr.NO_DISP),2),
+                                                  TypeFld.make("thenElse",TypeFunPtr.make(BitsFun.make0(17,20),2,TypeMemPtr.NO_DISP),3)));
+      Type xbool= TypeMemPtr.make(12,TypeStruct.make(TypeFld.NO_DISP,
+                                                     TypeFld.make("true", tf,1),
+                                                     TypeFld.make("false",tf,2),
+                                                     TypeFld.make("force",TypeFunPtr.make(24,1,TypeMemPtr.NO_DISP),3)));
+      TypeStruct rez = TypeStruct.make(TypeFld.NO_DISP,
+                                       TypeFld.make("a",HM.DO_HM ? TypeInt.NINT64 : Type.NSCALR,1),
+                                       TypeFld.make("b",Type.NSCALR,2),
+                                       TypeFld.make("bool",xbool,3));
+      assertEquals(TypeMemPtr.make(15,rez),syn.flow_type());
+    }
   }
-
 }

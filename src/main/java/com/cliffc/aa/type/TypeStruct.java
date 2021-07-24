@@ -603,7 +603,7 @@ public class TypeStruct extends TypeObj<TypeStruct> {
       TypeFunPtr optr = (TypeFunPtr)old;
       nptr._fidxs = nptr._fidxs.meet(optr._fidxs);
       // While structs normally meet, function args *join*, although the return still meets.
-      nptr._disp = (TypeMemPtr)ax_meet(bs,nptr._disp,optr._disp);
+      nptr._disp = ax_meet(bs,nptr._disp,optr._disp);
       break;
     }
     case TMEMPTR: {
