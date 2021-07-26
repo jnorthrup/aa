@@ -142,7 +142,7 @@ public class TestHM {
                      "map = { fun x -> (fun x)};"+
                      "{ q -> (map (fcn q) 5)}");
     if( HM.DO_HM )
-      assertEquals("{ A -> ( B:Cannot unify A:( 3, A) and 5, B) }",syn._hmt.p());
+      assertEquals("{ A? -> ( B:Cannot unify A:( 3, A) and 5, B) }",syn._hmt.p());
     if( HM.DO_GCP )
       if( HM.DO_HM )
         assertEquals(tfs(TypeMemPtr.make(7,make_tups(Type.XNSCALR,TypeMemPtr.make(7,make_tups(TypeInt.con(3),Type.XNSCALR))))),syn.flow_type());
@@ -227,7 +227,7 @@ public class TestHM {
 
   // Load common field 'x', ignoring mismatched fields y and z
   @Test public void test30() { run("{ pred -> (if pred @{x=2,y=3} @{x=3,z= \"abc\"}) .x }",
-                                   "{ A -> nint8 }", tfs(TypeInt.NINT8)); }
+                                   "{ A? -> nint8 }", tfs(TypeInt.NINT8)); }
 
   // Load some fields from an unknown struct: area of a rectangle.
   // Since no nil-check, correctly types as needing a not-nil input.
@@ -335,7 +335,7 @@ public class TestHM {
   // Example from SimpleSub requiring 'x' to be both a struct with field
   // 'v', and also a function type - specifically disallowed in 'aa'.
   @Test public void test38() { run("{ x -> y = ( x x.v ); 0}",
-                                   "{ Cannot unify @{ v = A} and { A -> B } -> 0 }", tfs(Type.XNIL)); }
+                                   "{ Cannot unify @{ v = A} and { A -> B } -> A? }", tfs(Type.XNIL)); }
 
   // Really bad flow-type: function can be called from the REPL with any
   // argument type - and the worse case will be an error.
@@ -457,11 +457,11 @@ public class TestHM {
 
   // Basic nil test
   @Test public void test47() { run("{ pred -> (if pred @{x=3} 0).x}",
-                                   "{ A -> May be nil when loading field x }", tfs(TypeInt.con(3))); }
+                                   "{ A? -> May be nil when loading field x }", tfs(TypeInt.con(3))); }
 
   // Basic uplifting after check
   @Test public void test48() { run("{ pred -> tmp=(if pred @{x=3} 0); (if tmp tmp.x 4) }",
-                                   "{ A -> nint8 }", tfs(TypeInt.NINT8)); }
+                                   "{ A? -> nint8 }", tfs(TypeInt.NINT8)); }
 
 
   // map is parametric in nil-ness
@@ -473,7 +473,7 @@ public class TestHM {
                      "  )\n"+
                      "}");
     if( HM.DO_HM )
-      assertEquals("{ A -> ( 3, nint8) }",syn._hmt.p());
+      assertEquals("{ A? -> ( 3, nint8) }",syn._hmt.p());
     if( HM.DO_GCP )
       if( HM.DO_HM ) assertEquals(tfs(TypeMemPtr.make(7,make_tups(TypeInt.con(3), TypeInt.NINT8 ))),syn.flow_type());
       else           assertEquals(tfs(TypeMemPtr.make(7,make_tups(TypeInt.NINT8 , TypeInt.NINT8 ))),syn.flow_type());
@@ -488,7 +488,7 @@ public class TestHM {
                      "  )\n"+
                      "}");
     if( HM.DO_HM )
-      assertEquals("{ A -> May be nil when loading field x }",syn._hmt.p());
+      assertEquals("{ A? -> May be nil when loading field x }",syn._hmt.p());
     if( HM.DO_GCP )
       if( HM.DO_HM ) assertEquals(tfs(TypeMemPtr.make(7,make_tups(TypeInt.NINT8, TypeInt.NINT8 ))),syn.flow_type());
       else           assertEquals(tfs(TypeMemPtr.make(7,make_tups(TypeInt.NINT8, TypeInt.NINT8 ))),syn.flow_type());
@@ -508,7 +508,7 @@ public class TestHM {
       assertEquals("{ A:@{ size = int64} B:@{ next = B, val = A}? -> int64 }",syn._hmt.p());
     if( HM.DO_GCP )
       if( HM.DO_HM ) assertEquals(tfs(TypeInt.INT64),syn.flow_type());
-      else           assertEquals(tfs(Type.SCALAR   ),syn.flow_type());
+      else           assertEquals(tfs(Type.SCALAR  ),syn.flow_type());
   }
 
   // Create a boolean-like structure, and unify.
@@ -545,7 +545,7 @@ public class TestHM {
           }
         }
        */
-      assertEquals("@{ a = nint8, b = (), bool = @{ false = A:@{ and = { A -> A }, or = { A -> A }, thenElse = { { () -> B } { () -> B } -> B }}, force = { C -> D:@{ and = { D -> D }, or = { D -> D }, thenElse = { { () -> E } { () -> E } -> E }} }, true = F:@{ and = { F -> F }, or = { F -> F }, thenElse = { { () -> G } { () -> G } -> G }}}}",syn._hmt.p());
+      assertEquals("@{ a = nint8, b = (), bool = @{ false = A:@{ and = { A -> A }, or = { A -> A }, thenElse = { { () -> B } { () -> B } -> B }}, force = { C? -> D:@{ and = { D -> D }, or = { D -> D }, thenElse = { { () -> E } { () -> E } -> E }} }, true = F:@{ and = { F -> F }, or = { F -> F }, thenElse = { { () -> G } { () -> G } -> G }}}}",syn._hmt.p());
     }
     if( HM.DO_GCP ) {
       Type tf   = TypeMemPtr.make(BitsAlias.FULL.make(10,11),
@@ -566,7 +566,7 @@ public class TestHM {
   }
 
 
-  // 
+  //
   @Test public void test53() { run( "{ x y -> (if x x y) }",
                                     "{ A? A -> A }", tfs(Type.SCALAR));  }
 
