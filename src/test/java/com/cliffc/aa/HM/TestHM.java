@@ -440,7 +440,7 @@ public class TestHM {
 "(loop \"def\" (id 2))");
     if( HM.DO_HM )
       assertEquals(HM.DO_GCP
-                   ? "*[4]str"  // Both HM and GCP
+                   ? "*[0,4]str?"  // Both HM and GCP
                    : "Cannot unify *[4]\"abc\" and 3", // HM alone cannot do this one
                    syn._hmt.p());
     if( HM.DO_GCP )
@@ -566,8 +566,12 @@ public class TestHM {
   }
 
 
-  //
+  // Simple nil/default test; takes a nilable but does not return one.
   @Test public void test53() { run( "{ x y -> (if x x y) }",
                                     "{ A? A -> A }", tfs(Type.SCALAR));  }
+
+  // Double nested.  Currently fails to unify x and y.
+  @Test public void test54() { run( "{ x y -> (if x (if x x y) y) }",
+    "{ A? A -> A }", tfs(Type.SCALAR));  }
 
 }

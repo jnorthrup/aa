@@ -76,8 +76,9 @@ import static com.cliffc.aa.type.TypeFld.Access;
 //    fe = e | e.label                 // optional field after expression
 //
 // BNF for the "core AA" pretty-printed types:
-//    T = X | X:T | { X* -> X } | base | (X0 X1) | @{ (label = X)* } | T? | Error
-//    base = any lattice element
+//    T = X | X:T | { X* -> X } | base | @{ (label = X)* } | T? | Error
+//    base = any lattice element, all are nilable
+//    Multiple stacked T????s collapse
 //
 
 public class HM {
@@ -1140,6 +1141,8 @@ public class HM {
       if( arg.is_err() ) return false; // Already an error
       T2 fun = find(); assert fun.is_fun();
       T2 ret = fun.args(1);
+      // If the arg is already nilchecked, can be a nilable of a nilable.
+      if( arg==ret ) return false;
       // Already an expanded nilable
       if( arg.is_nilable() && arg.args(0) == ret ) return false;
       // Already an expanded nilable with base
@@ -1155,11 +1158,10 @@ public class HM {
             { progress=true; break; } // Field/HMtypes misalign
         if( !progress ) return false; // No progress
       }
-      if( DO_GCP ) {            // If HM + GCP
-        if( !_types[0].must_nil() ) // Wait for types to be not-nil before forcing a nilable
-          return false;             // No need to be a nilable
-      }
       if( work==null ) return true;
+      // If the arg is already nilchecked, can be a nilable of a nilable.
+      if( arg.is_nilable() && ret.is_nilable() )
+        return arg.unify(ret,work);
       // Unify with arg with a nilable version of the ret.
       return T2.make_nil(ret).find().unify(arg,work);
     }
@@ -1367,7 +1369,10 @@ public class HM {
         _ids  = n._ids.clone();
         _open = n._open;
         _name = n._name;
-      } else throw unimpl();
+      } else if( n.is_nilable() ) {
+        _args[0] = n.args(0);
+      } else
+        throw unimpl();
 
       if( n._deps!=null ) {
         if( _deps == null ) _deps = n._deps;
