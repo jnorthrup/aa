@@ -107,7 +107,7 @@ public class HM {
 
     while( work.len()>0 ) {     // While work
       int oldcnt = T2.CNT;      // Used for cost-check when no-progress
-      assert work._cnt<1000;
+      assert work._cnt<2000;
       Syntax syn = work.pop();  // Get work
       if( DO_HM ) {
         T2 old = syn._hmt;        // Old value for progress assert
@@ -878,6 +878,7 @@ public class HM {
       T2 rec = _rec.find();
       if( rec.is_nilable() || (rec._alias!=null && rec._alias.test(0)) )
         return find().unify(T2.make_err("May be nil when loading field "+_id),work);
+      rec.push_update(this);
       int idx = rec._ids==null ? -1 : Util.find(rec._ids,_id);
       if( idx!= -1 )            // Unify against a pre-existing field
         return rec.args(idx).unify(find(), work);
@@ -888,7 +889,7 @@ public class HM {
       if( rec.is_struct() && rec._open ) // Effectively unify with an extended struct.
         return rec.add_fld(_id,find(),work);
       if( rec.is_leaf() )
-        return T2.make_struct(BitsAlias.EMPTY,new String[]{_id}, new T2[]{find().push_update(rec._deps)},true).unify(rec.push_update(this), work);
+        return T2.make_struct(BitsAlias.EMPTY,new String[]{_id}, new T2[]{find().push_update(rec._deps)},true).unify(rec, work);
 
       return find().unify(rec.miss_field(_id),work);
     }
@@ -2112,7 +2113,9 @@ public class HM {
 
       // Special printing for functions
       if( is_fun() ) {
-        _fidxs.str(sb.p("{")).p(' ');
+        sb.p("{");
+        if( _fidxs==null ) sb.p('_'); else _fidxs.str(sb);
+        sb.p(' ');
         for( int i=0; i<_args.length-1; i++ )
           str(sb,visit,_args[i],dups).p(" ");
         return str(sb.p("-> "),visit,_args[_args.length-1],dups).p(" }");
@@ -2120,9 +2123,12 @@ public class HM {
 
       // Special printing for structures
       if( is_struct() ) {
-        _alias.str(sb.p("@{")).p(' ');
-        for( int i=0; i<_ids.length; i++ )
-          str(sb.p(' ').p(_ids[i]).p(" = "),visit,_args[i],dups).p(',');
+        sb.p("@{");
+        if( _alias==null ) sb.p('_'); else _alias.str(sb);
+        sb.p(' ');
+        if( _ids==null ) sb.p("_ ");
+        else for( int i=0; i<_ids.length; i++ )
+               str(sb.p(' ').p(_ids[i]).p(" = "),visit,_args[i],dups).p(',');
         return sb.unchar().p("}");
       }
 
