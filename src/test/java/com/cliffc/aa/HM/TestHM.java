@@ -572,6 +572,91 @@ public class TestHM {
 
   // Double nested.  Currently fails to unify x and y.
   @Test public void test54() { run( "{ x y -> (if x (if x x y) y) }",
-    "{ A? A -> A }", tfs(Type.SCALAR));  }
+                                    "{ A? A -> A }", tfs(Type.SCALAR));  }
+
+  // Regression test; was NPE.  Was testMyBoolsNullPException from marco.servetto@gmail.com.
+  @Test public void test55() {
+    Root syn = HM.hm("void = @{};                           "+
+                     "true = @{                             "+
+                     "  and      = {b -> b}                 "+
+                     "  or       = {b -> true}              "+
+                     "  not      = {unused ->true}          "+
+                     "  thenElse = {then else->(then void) }"+
+                     "};                                    "+
+                     "false = @{                            "+
+                     "  and      = {b -> false}             "+
+                     "  or       = {b -> b}                 "+
+                     "  not      = {unused ->true}          "+
+                     "  thenElse = {then else->(else void) }"+
+                     "};                                    "+
+                     "boolSub ={b ->(if b true false)};     "+
+                     "@{true=(boolSub 1) false=(boolSub 0)} "+
+                     "");
+    if( HM.DO_HM )
+      assertEquals("@{ false = A:@{ and = { A -> A }, "+
+                         "not = { B -> A }, "+
+                         "or = { A -> A }, "+
+                         "thenElse = { { () -> C } { () -> C } -> C }"+
+                       "}, "+
+                       "true = D:@{ and = { D -> D }, "+
+                         "not = { E -> D }, "+
+                         "or = { D -> D }, "+
+                         "thenElse = { { () -> F } { () -> F } -> F }"+
+                       "}"+
+                    "}",syn._hmt.p());
+    if( HM.DO_GCP ) {
+      // true/false=*[10,11]@{$; and=[15,19]{any }; or=[16,20]{any }; not=[17,21]{any }; thenElse=[18,22]{any }}
+      Type tf   = TypeMemPtr.make(BitsAlias.FULL.make(10,11),
+                                  TypeStruct.make(TypeFld.NO_DISP,
+                                                  TypeFld.make("and"     ,TypeFunPtr.make(BitsFun.make0(15,19),1,TypeMemPtr.NO_DISP),1),
+                                                  TypeFld.make("or"      ,TypeFunPtr.make(BitsFun.make0(16,20),1,TypeMemPtr.NO_DISP),2),
+                                                  TypeFld.make("not"     ,TypeFunPtr.make(BitsFun.make0(17,21),1,TypeMemPtr.NO_DISP),3),
+                                                  TypeFld.make("thenElse",TypeFunPtr.make(BitsFun.make0(18,22),2,TypeMemPtr.NO_DISP),4)));
+      // *[12]@{^=any; true=$TF; false=$TF}
+      TypeStruct rez = TypeStruct.make(TypeFld.NO_DISP,
+                                       TypeFld.make("true" ,tf,1),
+                                       TypeFld.make("false",tf,2) );
+      assertEquals(TypeMemPtr.make(12,rez),syn.flow_type());
+    }
+
+  }
+
+  // Unexpectedly large type result.  Cut down version of test from
+  // marco.servetto@gmail.com.  Looks like it needs some kind of top-level
+  // unification with the true->false->true path, and instead the type has an
+  // unrolled instance of the 'true' type embedded in the 'false' type.
+  @Test public void test56() {
+    Root syn = HM.hm(
+"true =                               "+
+"  false = @{                         "+
+"    not      = {unused ->true}       "+
+"    thenElse = {then else->(else 7) }"+
+"    };                               "+
+"  @{                                 "+
+"    not      = {unused ->false}      "+
+"    thenElse = {then else->(then 7) }"+
+"    };                               "+
+"true"+
+                     "");
+    if( HM.DO_HM )
+      // Really expecting this type:
+      // A:@{                                                 // 'true' is a struct
+      //     not = { B -> @{                                  //   with field 'not', which is a function with ignores its input and returns a 'false' struct
+      //                    not = { C -> A },                 //     with field 'not' which is a function, which ignores its input and returns a 'true'
+      //                    thenElse = { D { 7 -> E } -> E }  //     with field 'thenElse' which ignores 'else' and given a {7->E} returns E
+      //                   }                                  //     end of 'false' struct
+      //            },                                        //   end of field 'not' function
+      //     thenElse = { { 7 -> F } G -> F }                 //   with field 'thenElse' which ignores 'else' and given a {7->F} returns F
+      //    }
+
+      assertEquals("@{ not = A:{ B -> @{ not = { C -> @{ not = A, thenElse = { { 7 -> D } E -> D }} }, thenElse = { F { 7 -> G } -> G }} }, thenElse = { { 7 -> D } E -> D }}",syn._hmt.p());
+    if( HM.DO_GCP ) {
+      // *[12]@{^=any; true=$TF; false=$TF}
+      TypeStruct rez = TypeStruct.make(TypeFld.NO_DISP,
+                                       TypeFld.make("not"     ,TypeFunPtr.make(BitsFun.make0(17),1,TypeMemPtr.NO_DISP),1),
+                                       TypeFld.make("thenElse",TypeFunPtr.make(BitsFun.make0(18),2,TypeMemPtr.NO_DISP),2));
+      assertEquals(TypeMemPtr.make(10,rez),syn.flow_type());
+    }
+  }
 
 }

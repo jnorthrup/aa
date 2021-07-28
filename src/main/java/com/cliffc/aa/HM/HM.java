@@ -73,7 +73,7 @@ import static com.cliffc.aa.type.TypeFld.Access;
 //
 // BNF for the "core AA" syntax:
 //    e  = number | string | primitives | (fe0 fe1*) | { id* -> fe0 } | id | id = fe0; fe1 | @{ (label = fe0)* }
-//    fe = e | e.label                 // optional field after expression
+//    fe = e | fe.label                 // optional field after expression
 //
 // BNF for the "core AA" pretty-printed types:
 //    T = X | X:T | { X* -> X } | base | @{ (label = X)* } | T? | Error
@@ -1146,7 +1146,16 @@ public class HM {
       // Already an expanded nilable
       if( arg.is_nilable() && arg.args(0) == ret ) return false;
       // Already an expanded nilable with base
-      if( arg.is_base  () && ret.is_base  () && arg._flow == ret._flow.meet_nil(Type.XNIL) ) return false;
+      if( arg.is_base() && ret.is_base() ) {
+        if( arg._flow == ret._flow.meet_nil(Type.XNIL) ) return false;
+        if( work==null ) return true;
+        Type mt = arg._flow.meet(ret._flow);
+        Type rflow = mt.join(Type.NSCALR);
+        Type aflow = mt.meet_nil(Type.XNIL);
+        if( rflow != ret._flow ) { ret._flow=rflow; work.push(_par); }
+        if( aflow != arg._flow ) { arg._flow=aflow; work.push(_par); }
+        return true;
+      }
       // Already an expanded nilable with struct
       if( arg.is_struct() && ret.is_struct() && arg._alias == arg._alias.meet_nil() ) {
         // But cannot just check the aliases, since they may not match.
@@ -1708,10 +1717,13 @@ public class HM {
         that._flow=null;  that._fidxs=null;  that._alias=null;  that._ids=null; // Now kill the base types, since in-error
         return that.union(make_err(msg),work);
       }
-      assert that.base_states()<=1;
-      that.add_deps_work(work);
-      if( that.is_leaf() ) that._name = _name; // That is a base/err now
-      return true;
+      //assert that.base_states()<=1;
+      //that.add_deps_work(work);
+      //if( that.is_leaf() ) that._name = _name; // That is a base/err now
+      //return true;
+
+      // Force the RHS to become the LHS
+      return that._union(this,work);
     }
     private boolean _can_be_HM_base(T2 that, Type that_flow) {
       if( that.base_states() > 1 ) return false;
@@ -1817,6 +1829,7 @@ public class HM {
           that.add_fld(_ids[i], that._open ? args(i)._fresh(nongen) : that.miss_field(_ids[i]),  work);
         } else
           progress |= args(i)._fresh_unify(that.args(idx),nongen,work);
+        if( (that=that.find()).is_err() ) return true;
         if( progress && work==null ) return true;
       }
       // Fields in RHS and not the LHS are also merged; if the LHS is open we'd
@@ -2193,6 +2206,17 @@ public class HM {
       return true;
     }
 
+    // Debugging tool
+    T2 find(int uid) { return _find(uid,new VBitSet()); }
+    private T2 _find(int uid, VBitSet visit) {
+      if( visit.tset(_uid) ) return null;
+      if( _uid==uid ) return this;
+      if( _args==null ) return null;
+      for( T2 arg : _args )
+        if( (arg=arg._find(uid,visit)) != null )
+          return arg;
+      return null;
+    }
     static void reset() { CNT=0; DUPS.clear(); VARS.clear(); ODUPS.clear(); CDUPS.clear(); UPDATE_VISIT.clear(); }
   }
 
