@@ -223,6 +223,7 @@ public class Parse implements Comparable<Parse> {
       TypeStruct ots = (TypeStruct)ot;
       alias = ots.fref_alias(); // Forward-ref alias was allocated at the forward ref
       tn = ots.merge_recursive_type((TypeStruct)t);
+      ot = null; // Crushed by the merge
       tn_crush = ((TypeStruct)tn).crush();
       _e.def_type(tvar,tn);
     }
@@ -862,7 +863,7 @@ public class Parse implements Comparable<Parse> {
     require(')',oldx);          // Balanced closing paren
 
     // Build the tuple from gathered args
-    NewObjNode nn = new NewObjNode(false,BitsAlias.REC,TypeStruct.open(TypeMemPtr.NO_DISP),Env.XNIL);
+    NewObjNode nn = new NewObjNode(false,BitsAlias.REC,TypeStruct.open(TypeMemPtr.NO_DISP),Env.ANY);
     for( int i=0; i<args._len; i++ )
       nn.create_active((""+i).intern(),args.at(i).unkeep(),Access.Final);
     nn._fld_starts = bads.asAry();

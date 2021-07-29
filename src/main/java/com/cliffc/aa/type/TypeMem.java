@@ -243,10 +243,10 @@ public class TypeMem extends Type<TypeMem> {
     // Not currently including closures
     TypeObj[] tos = new TypeObj[Math.max(BitsAlias.REC,BitsAlias.AARY)+1];
     tos[BitsAlias.ALL] = TypeObj.ISUSED;
-    tos[BitsAlias.REC]=TypeStruct.ALLSTRUCT;
+    tos[BitsAlias.REC] = TypeStruct.ALLSTRUCT;
     tos[BitsAlias.STR] = TypeStr.STR; //
     tos[BitsAlias.ABC] = TypeStr.ABC; //
-    tos[BitsAlias.AARY] = TypeAry.ARY; //
+    tos[BitsAlias.AARY]= TypeAry.ARY; //
     MEM  = make0(tos);
     XMEM = MEM.dual();
 

@@ -135,7 +135,7 @@ public class TypeFld extends Type<TypeFld> {
     private static final String[] SHORTS = new String[]{"==",":=","=","~=","!:=!","!=!","!~=!"};
     private static final String[] LONGS  = new String[]{"read-only","read/write","final","noaccess","!:=!","!=!","!~=!"};
     @Override public String toString() { return LONGS[ordinal()]; }
-    public SB str(SB sb, boolean debug) { return sb.p((debug ? SHORTS : LONGS)[ordinal()]); }
+    public SB str(SB sb, boolean debug) { return sb.p(SHORTS[ordinal()]); }
 
   };
 
@@ -171,7 +171,7 @@ public class TypeFld extends Type<TypeFld> {
     return oBot;
   }
 
-  public static final TypeFld NO_DISP = make("^",Type.NIL,Access.Final,0);
+  public static final TypeFld NO_DISP = make("^",Type.ANY,Access.Final,0);
 
   // Setting the type during recursive construction.
   public TypeFld setX(Type t) {

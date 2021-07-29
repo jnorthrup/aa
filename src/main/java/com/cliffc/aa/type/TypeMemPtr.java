@@ -77,6 +77,7 @@ public final class TypeMemPtr extends Type<TypeMemPtr> {
   public static final TypeFld    DISP_FLD= TypeFld.malloc("^",Type.NIL,Access.Final,0);
   public static final TypeStruct DISPLAY = TypeStruct.malloc("",false,TypeFlds.ts(DISP_FLD),true);
   public static final TypeMemPtr DISPLAY_PTR= new TypeMemPtr(BitsAlias.RECORD_BITS0,DISPLAY );
+  public static final Type       NO_DISP= Type.ANY;
   static {
     DISP_FLD._hash = DISP_FLD.compute_hash();
     DISPLAY._hash = DISPLAY.compute_hash();
@@ -102,7 +103,6 @@ public final class TypeMemPtr extends Type<TypeMemPtr> {
   public  static final TypeMemPtr NILPTR = make(BitsAlias.NIL,TypeObj.ISUSED);
   public  static final TypeMemPtr EMTPTR = make(BitsAlias.EMPTY,TypeObj.UNUSED);
   public  static final TypeMemPtr DISP_SIMPLE= make(BitsAlias.RECORD_BITS0,TypeObj.ISUSED); // closed display
-  public  static final Type       NO_DISP= Type.ANY;
   static final Type[] TYPES = new Type[]{OOP0,STR0,STRPTR,ABCPTR,STRUCT,EMTPTR,DISPLAY,DISPLAY_PTR};
 
   @Override public boolean is_display_ptr() {
