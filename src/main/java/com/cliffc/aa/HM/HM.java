@@ -1179,7 +1179,7 @@ public class HM {
         return true;
       }
       // Already an expanded nilable with struct
-      if( arg.is_struct() && ret.is_struct() && arg._alias == arg._alias.meet_nil() ) {
+      if( arg.is_struct() && ret.is_struct() && arg._alias == arg._alias.meet_nil() && arg._ids.length == ret._ids.length ) {
         // But cannot just check the aliases, since they may not match.
         // Also check that the fields align
         boolean progress=false;
@@ -1905,10 +1905,18 @@ public class HM {
       assert no_uf();
       T2 rez = VARS.get(this);
       if( rez!=null ) return rez; // Been there, done that
+      // Unlike the original algorithm, to handle cycles here we stop making a
+      // copy if it appears at this level in the nongen set.  Otherwise we'd
+      // clone it down to the leaves - and keep all the nongen leaves.
+      // Stopping here preserves the cyclic structure instead of unrolling it.
+      if( nongen_in(nongen) ) {
+        VARS.put(this,this);
+        return this;
+      }
 
       if( is_leaf() ) {
         // If occurs_in lexical scope, keep same variable, else make a new leaf
-        T2 t = nongen_in(nongen) ? this : T2.make_leaf();
+        T2 t = T2.make_leaf();
         VARS.put(this,t);
         return t;
       } else {                  // Structure is deep-replicated

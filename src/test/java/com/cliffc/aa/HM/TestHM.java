@@ -246,6 +246,23 @@ public class TestHM {
     TypeMemPtr cycle_ptrn = (TypeMemPtr)cycle_strn.at(1);
     return cycle_ptrn;
   }
+  private static TypeMemPtr build_cycle2( boolean nil, Type fld ) {
+    // Unrolled, known to only produce results where either other nested
+    // struct is from a different allocation site.
+    BitsAlias aliases0 = BitsAlias.make0(10);
+    BitsAlias aliases9 = BitsAlias.make0( 9);
+    if( nil ) aliases0 = aliases0.meet_nil();
+    if( nil ) aliases9 = aliases9.meet_nil();
+    TypeMemPtr cycle_ptr0 = TypeMemPtr.make(aliases0,TypeObj.XOBJ);
+    TypeStruct cycle_str1 = TypeStruct.make(TypeFld.NO_DISP,TypeFld.make("n1",cycle_ptr0,1),TypeFld.make("v1",fld,2));
+    TypeMemPtr cycle_ptr1 = TypeMemPtr.make(aliases9,cycle_str1);
+    TypeStruct cycle_str2 = TypeStruct.make(TypeFld.NO_DISP,TypeFld.make("n1",cycle_ptr1,1),TypeFld.make("v1",fld,2));
+    TypeMemPtr cycle_ptr2 = TypeMemPtr.make(aliases0,cycle_str2);
+    TypeStruct cycle_str3 = TypeStruct.make(TypeFld.NO_DISP,TypeFld.make("n1",cycle_ptr2,1),TypeFld.make("v1",fld,2));
+    TypeStruct cycle_strn = cycle_str3.approx(1,9);
+    TypeMemPtr cycle_ptrn = (TypeMemPtr)cycle_strn.at(1);
+    return cycle_ptrn;
+  }
 
 
   // Recursive linked-list discovery, with no end clause.  Since this code has
@@ -303,30 +320,8 @@ public class TestHM {
     Root syn = HM.hm("map = { lst -> (if lst @{ n1= arg= lst.n0; (if arg @{ n1=(map arg.n0), v1=(str arg.v0)} 0), v1=(str lst.v0) } 0) }; map");
     if( HM.DO_HM )
       assertEquals("{ A:@{ n0 = @{ n0 = A, v0 = int64}?, v0 = int64}? -> B:@{ n1 = @{ n1 = B, v1 = *[4]str}?, v1 = *[4]str}? }",syn._hmt.p());
-    if( HM.DO_GCP ) {
-      TypeStruct cycle_strX;
-      if( true ) {
-        // Unrolled, known to only produce results where either other nested
-        // struct is from a different allocation site.
-        TypeMemPtr cycle_ptr0 = TypeMemPtr.make(BitsAlias.FULL.make(0,10),TypeObj.XOBJ);
-        TypeStruct cycle_str1 = TypeStruct.make(TypeFld.NO_DISP,TypeFld.make("n1",cycle_ptr0,1),TypeFld.make("v1",TypeMemPtr.STRPTR,2));
-        TypeMemPtr cycle_ptr1 = TypeMemPtr.make(BitsAlias.FULL.make(0, 9),cycle_str1);
-        TypeStruct cycle_str2 = TypeStruct.make(TypeFld.NO_DISP,TypeFld.make("n1",cycle_ptr1,1),TypeFld.make("v1",TypeMemPtr.STRPTR,2));
-        TypeMemPtr cycle_ptr2 = TypeMemPtr.make(BitsAlias.FULL.make(0,10),cycle_str2);
-        TypeStruct cycle_str3 = TypeStruct.make(TypeFld.NO_DISP,TypeFld.make("n1",cycle_ptr2,1),TypeFld.make("v1",TypeMemPtr.STRPTR,2));
-        cycle_strX = cycle_str3;
-      } else {
-        // Not unrolled, both structs are folded
-        TypeMemPtr cycle_ptr0 = TypeMemPtr.make(BitsAlias.FULL.make(0,7, 8),TypeObj.XOBJ);
-        TypeStruct cycle_str1 = TypeStruct.make(TypeFld.NO_DISP,TypeFld.make("n1",cycle_ptr0,1),TypeFld.make("v1",TypeMemPtr.STRPTR,2));
-        TypeMemPtr cycle_ptr1 = TypeMemPtr.make(BitsAlias.FULL.make(0,7, 8),cycle_str1);
-        TypeStruct cycle_str2 = TypeStruct.make(TypeFld.NO_DISP,TypeFld.make("n1",cycle_ptr1,1),TypeFld.make("v1",TypeMemPtr.STRPTR,2));
-        cycle_strX = cycle_str2;
-      }
-      TypeStruct cycle_strn = cycle_strX.approx(1,9);
-      TypeMemPtr cycle_ptrn = (TypeMemPtr)cycle_strn.at(1);
-      assertEquals(tfs(cycle_ptrn),syn.flow_type());
-    }
+    if( HM.DO_GCP )
+      assertEquals(tfs(build_cycle2(true,TypeMemPtr.STRPTR)),syn.flow_type());
   }
 
   @Test public void test37() { run("x = { y -> (x (y y))}; x",
@@ -621,45 +616,24 @@ public class TestHM {
 
   }
 
-  // Unexpectedly large type result.  Cut down version of test from
-  // marco.servetto@gmail.com.  Looks like it needs some kind of top-level
-  // unification with the true->false->true path, and instead the type has an
-  // unrolled instance of the 'true' type embedded in the 'false' type.
+  // Regression test.  Was unexpectedly large type result.  Cut down version of
+  // test from marco.servetto@gmail.com.  Looks like it needs some kind of
+  // top-level unification with the true->false->true path, and instead the
+  // type has an unrolled instance of the 'true' type embedded in the 'false'
+  // type.  Bug is actually a core HM algorithm change to handle cycles.
   @Test public void test56() {
-    Root syn = HM.hm(
-"true =                               "+
-"  false = @{                         "+
-"    not      = {unused ->true}       "+
-"    thenElse = {then else->(else 7) }"+
-"    };                               "+
-"  @{                                 "+
-"    not      = {unused ->false}      "+
-"    thenElse = {then else->(then 7) }"+
-"    };                               "+
-"true"+
+    Root syn = HM.hm("left =     "+
+                     "  rite = @{n1 = left v1 = 7 }; "+
+                     "  @{ n1 = rite v1 = 7 };"+
+                     "left"+
                      "");
     if( HM.DO_HM )
-      // Really expecting this type:
-      // A:@{                                                 // 'true' is a struct
-      //     not = { B -> @{                                  //   with field 'not', which is a function with ignores its input and returns a 'false' struct
-      //                    not = { C -> A },                 //     with field 'not' which is a function, which ignores its input and returns a 'true'
-      //                    thenElse = { D { 7 -> E } -> E }  //     with field 'thenElse' which ignores 'else' and given a {7->E} returns E
-      //                   }                                  //     end of 'false' struct
-      //            },                                        //   end of field 'not' function
-      //     thenElse = { { 7 -> F } G -> F }                 //   with field 'thenElse' which ignores 'else' and given a {7->F} returns F
-      //    }
-
-      assertEquals("@{ not = A:{ B -> @{ not = { C -> @{ not = A, thenElse = { { 7 -> D } E -> D }} }, thenElse = { F { 7 -> G } -> G }} }, thenElse = { { 7 -> D } E -> D }}",syn._hmt.p());
-    if( HM.DO_GCP ) {
-      // *[12]@{^=any; true=$TF; false=$TF}
-      TypeStruct rez = TypeStruct.make(TypeFld.NO_DISP,
-                                       TypeFld.make("not"     ,TypeFunPtr.make(BitsFun.make0(17),1,TypeMemPtr.NO_DISP),1),
-                                       TypeFld.make("thenElse",TypeFunPtr.make(BitsFun.make0(18),2,TypeMemPtr.NO_DISP),2));
-      assertEquals(TypeMemPtr.make(10,rez),syn.flow_type());
-    }
+      assertEquals("A:@{ n1 = @{ n1 = A, v1 = 7}, v1 = 7}",syn._hmt.p());
+    if( HM.DO_GCP )
+      assertEquals(build_cycle2(false,TypeInt.con(7)),syn.flow_type());
   }
 
-    @Test public void test57() {
+  @Test public void test57() {
     Root syn = HM.hm(
 "all =                                      "+
 "true = @{                                  "+
@@ -675,11 +649,7 @@ public class TestHM {
 "all"+
 "");
     if( HM.DO_HM )
-      if( HM.DO_GCP )
-        assertEquals("@{ boolSub = { A? -> @{ not = { B -> C:@{ not = { D -> C }, thenElse = { { 7 -> E } { 7 -> E } -> E }} }, thenElse = { { 7 -> F } { 7 -> F } -> F }} }, false = G:@{ not = { D -> G }, thenElse = { { 7 -> E } { 7 -> E } -> E }}, true = G}",syn._hmt.p());
-      else
         assertEquals("@{ boolSub = { A? -> @{ not = { B -> C:@{ not = { D -> C }, thenElse = { { 7 -> E } { 7 -> E } -> E }} }, thenElse = { { 7 -> F } { 7 -> F } -> F }} }, false = C, true = C}",syn._hmt.p());
-
     if( HM.DO_GCP ) {
 
       Type tt = TypeMemPtr.make(BitsAlias.FULL.make(9),
