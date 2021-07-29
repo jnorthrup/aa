@@ -558,8 +558,8 @@ public class TestHM {
                                                      TypeFld.make("false",tf,2),
                                                      TypeFld.make("force",TypeFunPtr.make(24,1,TypeMemPtr.NO_DISP),3)));
       TypeStruct rez = TypeStruct.make(TypeFld.NO_DISP,
-                                       TypeFld.make("a",HM.DO_HM ? Type.SCALAR : Type.NSCALR,1),
-                                       TypeFld.make("b",HM.DO_HM ? Type.SCALAR : Type.NSCALR,2),
+                                       TypeFld.make("a",HM.DO_HM ? TypeInt.INT64: Type.NSCALR,1),
+                                       TypeFld.make("b",HM.DO_HM ? Type.SCALAR  : Type.NSCALR,2),
                                        TypeFld.make("bool",xbool,3));
       assertEquals(TypeMemPtr.make(15,rez),syn.flow_type());
     }
@@ -679,7 +679,7 @@ public class TestHM {
         assertEquals("@{ boolSub = { A? -> @{ not = { B -> C:@{ not = { D -> C }, thenElse = { { 7 -> E } { 7 -> E } -> E }} }, thenElse = { { 7 -> F } { 7 -> F } -> F }} }, false = G:@{ not = { D -> G }, thenElse = { { 7 -> E } { 7 -> E } -> E }}, true = G}",syn._hmt.p());
       else
         assertEquals("@{ boolSub = { A? -> @{ not = { B -> C:@{ not = { D -> C }, thenElse = { { 7 -> E } { 7 -> E } -> E }} }, thenElse = { { 7 -> F } { 7 -> F } -> F }} }, false = C, true = C}",syn._hmt.p());
-  
+
     if( HM.DO_GCP ) {
 
       Type tt = TypeMemPtr.make(BitsAlias.FULL.make(9),

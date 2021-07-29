@@ -1741,13 +1741,10 @@ public class HM {
         that._flow=null;  that._fidxs=null;  that._alias=null;  that._ids=null; // Now kill the base types, since in-error
         return that.union(make_err(msg),work);
       }
-      //assert that.base_states()<=1;
-      //that.add_deps_work(work);
-      //if( that.is_leaf() ) that._name = _name; // That is a base/err now
-      //return true;
-
-      // Force the RHS to become the LHS
-      return that._union(this,work);
+      assert that.base_states()<=1;
+      that.add_deps_work(work);
+      if( that.is_leaf() ) that._name = _name; // That is a base/err now
+      return true;
     }
     private boolean _can_be_HM_base(T2 that, Type that_flow) {
       if( that.base_states() > 1 ) return false;
@@ -1801,14 +1798,33 @@ public class HM {
       // Special handling for nilable
       if( this.is_nilable() && !that.is_nilable() ) {
         if( that.is_base() ) {
-          if( that._flow.meet_nil(Type.XNIL)==that._flow ) return false; // Nilable already
-          if( work==null ) return true;
+          Type mt = that._flow.meet_nil(Type.XNIL);
+          if( mt==that._flow ) return false; // Nilable already
+          if( work!=null ) that._flow = mt;
+          return true;
+        }
+        if( that.is_struct() ) {
+          if( that._alias.test(0) ) return false; // Nilable already
           throw unimpl();
         }
 
         throw unimpl();
       }
-      if( that.is_nilable() && !this.is_nilable() ) throw unimpl();
+      // That is nilable and this is not
+      if( that.is_nilable() && !this.is_nilable() ) {
+        if( this.is_struct() ) {
+          // fresh_unify a not-nil version of this with the not-nil version of that
+          T2 copy = this;
+          if( copy._alias.test(0) ) { // make a not=nil version of struct
+            copy = this.copy();
+            copy._alias = copy._alias.clear(0);
+            System.arraycopy(this._args,0,copy._args,0,this._args.length);
+          }
+          boolean progress = copy._fresh_unify(that.args(0),nongen,work);
+          return _alias.test(0) ? vput(that,progress) : progress;
+        }
+        throw unimpl();
+      }
 
       if( !Util.eq(_name,that._name) ||
           (!is_struct() && _args.length != that._args.length) )
@@ -1982,7 +1998,6 @@ public class HM {
       long duid = dbl_uid(t._uid);
       if( Apply.WDUPS.putIfAbsent(duid,"")!=null ) return t;
       assert no_uf();
-      if( t==Type.SCALAR ) return fput(t); // Will be scalar for all the breakdown types
       if( is_err() ) return fput(t); //
       // Base variables (when widened to an HM type) might force a lift.
       if( is_base() ) return fput(_flow.widen().join(t));
@@ -1994,8 +2009,9 @@ public class HM {
         args(0).walk_types_in(t); // TODO: Not sure if i should strip nil or not
         return t;
       }
+      if( t==Type.SCALAR || t==Type.NSCALR ) return fput(t); // Will be scalar for all the breakdown types
       if( is_fun() ) {
-        if( !(t instanceof TypeFunPtr) ) return t; // Typically some kind of error situation
+        if( !(t instanceof TypeFunPtr) ) return t; // Typically, some kind of error situation
         // TODO: PAIR1 should report better
         TypeFunPtr tfp = (TypeFunPtr)t;
         T2 ret = args(_args.length-1);
