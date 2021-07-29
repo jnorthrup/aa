@@ -467,7 +467,7 @@ public class HM {
             return _init(let,let._targ);
         }
       }
-      throw new RuntimeException("Parse error, "+_name+" is undefined");
+      throw new RuntimeException("Parse error, "+_name+" is undefined in "+_par);
     }
     private int _init(Syntax def,T2 idt) { _def = def; _idt = idt; return 1; }
     @Override boolean more_work(Worklist work) { return more_work_impl(work); }
@@ -733,6 +733,7 @@ public class HM {
 
 
   static class Root extends Apply {
+    static final Syntax[] NARGS = new Syntax[0];
     Root(Syntax body) { super(body); }
     @Override SB str(SB sb) { return _fun.str(sb); }
     @Override boolean hm(Worklist work) { return find().unify(_fun.find(),work); }
@@ -740,26 +741,46 @@ public class HM {
     // Root-widening is when Root acts as-if it is calling the returned
     // function with the worse-case legal args.
     static Type widen(T2 t2) { return t2.as_flow(); }
-    private static Type xval(TypeFunPtr fun) {
-      Type rez = Type.XSCALAR;
-      for( int fidx : fun._fidxs )
-        rez = rez.meet(Lambda.FUNS.get(fidx).apply(null));
-      return rez;
-    }
     @Override Type val(Worklist work) {
-      // Here we do some extra work, "as if" our arguments (which only lazily exist)
-      // may have had their types change.
-      add_val_work(null,work);
+      if( _fun._flow.above_center() || work==null )
+        return _fun._flow;
+      // Root-widening needs to call all functions which can be returned from
+      // the Root or from any function reachable from the Root via struct &
+      // fields, or by being returned from another function.
+      BitsFun fidxs = find().find_fidxs();
+      if( fidxs != BitsFun.EMPTY )
+        for( int fidx : fidxs ) {
+          Lambda fun = Lambda.FUNS.get(fidx);
+          if( fun!=null ) {
+            fun.find().push_update(this); // Discovered as call-site; if the Lambda changes the Apply needs to be revisited.
+            // For each returned function, assume Root calls all arguments with
+            // worse-case values.
+            for( int i=0; i<fun._types.length; i++ ) {
+              Type formal = fun._types[i];
+              Type actual = Root.widen(fun.targ(i));
+              Type rez = formal.meet(actual);
+              if( formal != rez ) {
+                fun._types[i] = rez;
+                work.addAll(fun.targ(i)._deps);
+                work.push(fun._body);
+              }
+            }
+          }
+        }
 
       return _fun._flow;
     }
+
     // Expand functions to full signatures, recursively
     Type flow_type() { return add_sig(_flow); }
-
     private static Type add_sig(Type t) {
       if( t instanceof TypeFunPtr ) {
-        Type rez = add_sig(xval((TypeFunPtr)t));
-        return TypeFunSig.make(TypeTuple.make_ret(rez),TypeTuple.make_args());
+        TypeFunPtr fun = (TypeFunPtr)t;
+        Type rez = Type.XSCALAR;
+        for( int fidx : fun._fidxs )
+          rez = rez.meet(Lambda.FUNS.get(fidx).apply(NARGS));
+        Type rez2 = add_sig(rez);
+        return TypeFunSig.make(TypeTuple.make_ret(rez2),TypeTuple.make_args());
       } else {
         return t;
       }
@@ -1004,7 +1025,7 @@ public class HM {
       @Override Type apply(Syntax[] args) {
         T2 tcon = find().args(1).args(0);
         assert tcon.is_base();
-        return TypeMemPtr.make(PAIR_ALIAS,TypeStruct.make(TypeStruct.tups(tcon._flow,args==null ? Root.widen(_targs[0]) : args[0]._flow)));
+        return TypeMemPtr.make(PAIR_ALIAS,TypeStruct.make(TypeStruct.tups(tcon._flow,args.length==0 ? Root.widen(_targs[0]) : args[0]._flow)));
       }
     }
   }
@@ -1129,7 +1150,7 @@ public class HM {
 
   // Remove a nil from a struct after a guarding if-test
   static class NotNil extends PrimSyn {
-    @Override String name() { return "notnil"; }
+    @Override String name() { return " notnil"; }
     public NotNil() { super(T2.make_leaf(),T2.make_leaf()); }
     @Override PrimSyn make() { return new NotNil(); }
     @Override int prep_tree( Syntax par, VStack nongen, Worklist work ) {
@@ -1504,7 +1525,7 @@ public class HM {
     // U-F union; this becomes that; returns 'that'.
     // No change if only testing, and reports progress.
     boolean union(T2 that, Worklist work) {
-      assert no_uf(); // Cannot union twice
+      assert no_uf() && that.no_uf(); // Cannot union twice
       assert base_states()<=1 && that.base_states()<=1;
       if( this==that ) return false;
       if( work==null ) return true; // Report progress without changing
@@ -1555,6 +1576,7 @@ public class HM {
 
     // Hard unify this into that, no testing for progress.
     private boolean _union(T2 that, Worklist work) {
+      assert that.no_uf();
       _flow=null;  _fidxs=null;  _alias=null; _ids=null; _err=null; // Kill the base types in a unified type
       // Worklist: put updates on the worklist for revisiting
       if( _deps != null ) {
@@ -1629,15 +1651,16 @@ public class HM {
       // Structs unify only on matching fields, and add missing fields.
       if( is_struct() ) {
         _unify_struct(that,work);
+        that = that.find();
       } else {                                // Normal structural unification
         for( int i=0; i<_args.length; i++ ) { // For all fields in LHS
           args(i)._unify(that.args(i),work);
           if( (that=that.find()).is_err() ) break;
         }
       }
-      if( find().is_err() && !that.find().is_err() )
+      if( find().is_err() && !that.is_err() )
         // TODO: Find a more elegant way to preserve errors
-        return that.find().union(find(),work); // Preserve errors
+        return that.union(find(),work); // Preserve errors
       return find().union(that,work);
     }
 
@@ -2045,6 +2068,21 @@ public class HM {
         return tmp.make_from(ts.make_from(flds));
       }
       throw unimpl();           // Handled all cases
+    }
+
+    // -----------------
+    private static final VBitSet FIDX_VISIT  = new VBitSet();
+    private static BitsFun FIDXS = null;
+    BitsFun find_fidxs() {  FIDX_VISIT.clear(); FIDXS = BitsFun.EMPTY; _find_fidxs(); return FIDXS; }
+    private void _find_fidxs() {
+      if( FIDX_VISIT.tset(_uid) ) return;
+      if( is_struct() )
+        for( T2 arg : _args )
+          arg._find_fidxs();
+      if( is_fun() ) {
+        FIDXS = FIDXS.meet(_fidxs);
+        args(_args.length-1)._find_fidxs();
+      }
     }
 
     // -----------------

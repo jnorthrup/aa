@@ -558,8 +558,8 @@ public class TestHM {
                                                      TypeFld.make("false",tf,2),
                                                      TypeFld.make("force",TypeFunPtr.make(24,1,TypeMemPtr.NO_DISP),3)));
       TypeStruct rez = TypeStruct.make(TypeFld.NO_DISP,
-                                       TypeFld.make("a",HM.DO_HM ? TypeInt.NINT64 : Type.NSCALR,1),
-                                       TypeFld.make("b",Type.NSCALR,2),
+                                       TypeFld.make("a",HM.DO_HM ? Type.SCALAR : Type.NSCALR,1),
+                                       TypeFld.make("b",HM.DO_HM ? Type.SCALAR : Type.NSCALR,2),
                                        TypeFld.make("bool",xbool,3));
       assertEquals(TypeMemPtr.make(15,rez),syn.flow_type());
     }
@@ -656,6 +656,45 @@ public class TestHM {
                                        TypeFld.make("not"     ,TypeFunPtr.make(BitsFun.make0(17),1,TypeMemPtr.NO_DISP),1),
                                        TypeFld.make("thenElse",TypeFunPtr.make(BitsFun.make0(18),2,TypeMemPtr.NO_DISP),2));
       assertEquals(TypeMemPtr.make(10,rez),syn.flow_type());
+    }
+  }
+
+    @Test public void test57() {
+    Root syn = HM.hm(
+"all =                                      "+
+"true = @{                                  "+
+"  not = {unused -> all.false},             "+
+"  thenElse = {then else->(then 7) }        "+
+"};                                         "+
+"false = @{                                 "+
+"  not = {unused -> all.true},              "+
+"  thenElse = {then else->(else 7) }        "+
+"};                                         "+
+"boolSub ={b ->(if b true false)};          "+
+"@{true=true, false=false, boolSub=boolSub};"+
+"all"+
+"");
+    if( HM.DO_HM )
+      if( HM.DO_GCP )
+        assertEquals("@{ boolSub = { A? -> @{ not = { B -> C:@{ not = { D -> C }, thenElse = { { 7 -> E } { 7 -> E } -> E }} }, thenElse = { { 7 -> F } { 7 -> F } -> F }} }, false = G:@{ not = { D -> G }, thenElse = { { 7 -> E } { 7 -> E } -> E }}, true = G}",syn._hmt.p());
+      else
+        assertEquals("@{ boolSub = { A? -> @{ not = { B -> C:@{ not = { D -> C }, thenElse = { { 7 -> E } { 7 -> E } -> E }} }, thenElse = { { 7 -> F } { 7 -> F } -> F }} }, false = C, true = C}",syn._hmt.p());
+  
+    if( HM.DO_GCP ) {
+
+      Type tt = TypeMemPtr.make(BitsAlias.FULL.make(9),
+                                TypeStruct.make(TypeFld.NO_DISP,
+                                                TypeFld.make("not"     ,TypeFunPtr.make(BitsFun.make0(15),1,TypeMemPtr.NO_DISP),1),
+                                                TypeFld.make("thenElse",TypeFunPtr.make(BitsFun.make0(16),2,TypeMemPtr.NO_DISP),2)));
+      Type ff = TypeMemPtr.make(BitsAlias.FULL.make(10),
+                                TypeStruct.make(TypeFld.NO_DISP,
+                                                TypeFld.make("not"     ,TypeFunPtr.make(BitsFun.make0(17),1,TypeMemPtr.NO_DISP),1),
+                                                TypeFld.make("thenElse",TypeFunPtr.make(BitsFun.make0(18),2,TypeMemPtr.NO_DISP),2)));
+      TypeStruct rez = TypeStruct.make(TypeFld.NO_DISP,
+                                       TypeFld.make("true"   ,tt,1),
+                                       TypeFld.make("false"  ,ff,2),
+                                       TypeFld.make("boolSub",TypeFunPtr.make(BitsFun.make0(22),1,TypeMemPtr.NO_DISP),3));
+      assertEquals(TypeMemPtr.make(11,rez),syn.flow_type());
     }
   }
 
