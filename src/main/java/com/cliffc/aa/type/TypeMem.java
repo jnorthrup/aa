@@ -64,11 +64,12 @@ public class TypeMem extends Type<TypeMem> {
   // not part of the hash/equals checks.  Optional.  Lazily filled in.
   private HashMap<TypeMemPtr,TypeMemPtr> _sharp_cache;
 
-  private TypeMem  (TypeObj[] pubs) { super(TMEM); init(pubs); }
-  private void init(TypeObj[] pubs) {
-    super.init(TMEM);
+  private TypeMem() {}
+  private TypeMem init(TypeObj[] pubs) {
+    super.init(TMEM,"");
     assert check(pubs);    // Caller has canonicalized arrays already
     _pubs = pubs;
+    return this;
   }
   // False if not 'tight' (no trailing null pairs) or any matching pairs (should
   // collapse to their parent) or any mixed parent/child.
@@ -160,12 +161,11 @@ public class TypeMem extends Type<TypeMem> {
   }
 
   private static TypeMem FREE=null;
-  @Override protected TypeMem free( TypeMem ret ) { _pubs =null; _sharp_cache=null; FREE=this; return ret; }
+  private TypeMem free( TypeMem ret ) { _pubs =null; _sharp_cache=null; FREE=this; return ret; }
   private static TypeMem make(TypeObj[] pubs) {
-    TypeMem t1 = FREE;
-    if( t1 == null ) t1 = new TypeMem(pubs);
-    else { FREE = null;       t1.init(pubs); }
-    TypeMem t2 = (TypeMem)t1.hashcons();
+    TypeMem t1 = FREE == null ? new TypeMem() : FREE;
+    FREE = null;
+    TypeMem t2 = t1.init(pubs).hashcons();
     return t1==t2 ? t1 : t1.free(t2);
   }
 
@@ -269,7 +269,7 @@ public class TypeMem extends Type<TypeMem> {
     for( int i = 0; i< _pubs.length; i++ )
       if( _pubs[i] != null )
         pubs[i] = (TypeObj) _pubs[i].dual();
-    return new TypeMem(pubs);
+    return new TypeMem().init(pubs);
   }
   @Override protected Type xmeet( Type t ) {
     if( t._type != TMEM ) return ALL;

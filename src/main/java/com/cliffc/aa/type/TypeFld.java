@@ -17,8 +17,8 @@ public class TypeFld extends Type<TypeFld> {
   public Access _access;        // Field access type: read/write, final, read/only
   public int _order;            // Field order in the struct, or -1 for undefined (Bot) or -2 for conforming (top)
 
-  private TypeFld() { super(TFLD); }
   private TypeFld init( @NotNull String fld, Type t, Access access, int order ) {
+    super.init(TFLD,"");
     assert !(t instanceof TypeFld);
     _fld=fld; _t=t; _access=access; _order=order;
     _hash = compute_hash();
@@ -49,7 +49,7 @@ public class TypeFld extends Type<TypeFld> {
   }
 
   private static TypeFld FREE=null;
-  @Override protected TypeFld free( TypeFld ret ) { _hash=0; _t=null; FREE=this; return ret; }
+  private TypeFld free( TypeFld ret ) { _hash=0; _t=null; FREE=this; return ret; }
   // Split malloc/hashcons is used when making cyclic structures
   public static TypeFld malloc( String fld, Type t, int order ) { return malloc(fld,t,Access.Final,order); }
   public static TypeFld malloc( String fld, Type t, Access access, int order ) {
@@ -58,7 +58,7 @@ public class TypeFld extends Type<TypeFld> {
     return t1.init(fld,t,access,order);
   }
   public TypeFld hashcons_free() {
-    TypeFld t2 = (TypeFld)hashcons();
+    TypeFld t2 = hashcons();
     return this==t2 ? this : free(t2);
   }
   public static TypeFld make( String fld, Type t, int order ) { return make(fld,t,Access.Final,order); }

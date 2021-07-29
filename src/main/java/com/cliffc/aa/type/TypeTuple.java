@@ -11,11 +11,11 @@ import static com.cliffc.aa.AA.*;
 public class TypeTuple extends Type<TypeTuple> {
   boolean _any;
   public Type[] _ts; // The fixed known types
-  protected TypeTuple( byte type, boolean any, Type[] ts ) { super(type); init(type, any, ts);  }
-  protected void init( byte type, boolean any, Type[] ts ) {
-    super.init(type);
+  protected TypeTuple init( boolean any, Type[] ts ) {
+    super.init(TTUPLE,"");
     _any = any;
     _ts = ts;
+    return this;
   }
 
   // If visit is null, children have had their hash already computed.
@@ -79,16 +79,15 @@ public class TypeTuple extends Type<TypeTuple> {
   }
 
   private static TypeTuple FREE=null;
-  @Override protected TypeTuple free( TypeTuple ret ) { FREE=this; return ret; }
-  public static TypeTuple make0( boolean any, Type[] ts ) {
+  private TypeTuple free( TypeTuple ret ) { FREE=this; return ret; }
+  private static TypeTuple make( boolean any, Type[] ts ) {
+    TypeTuple t1 = FREE == null ? new TypeTuple() : FREE;
+    FREE = null;
     ts = Types.hash_cons(ts);
-    TypeTuple t1 = FREE;
-    if( t1 == null ) t1 = new TypeTuple(TTUPLE, any, ts);
-    else { FREE = null; t1.init(TTUPLE, any, ts); }
-    assert t1._type==TTUPLE;
-    TypeTuple t2 = (TypeTuple)t1.hashcons();
+    TypeTuple t2 = t1.init(any,ts).hashcons();
     return t1==t2 ? t1 : t1.free(t2);
   }
+  public static TypeTuple make0( boolean any, Type[] ts ) { return make(any,ts); }
   public static TypeTuple make( Type[] ts ) { return make0(false,ts); }
   public static TypeTuple make( ) { return make0(false,Types.get(0)); }
   public static TypeTuple make( Type t0, Type t1 ) { return make0(false,Types.ts(t0,t1)); }
@@ -160,7 +159,7 @@ public class TypeTuple extends Type<TypeTuple> {
     Type[] ts = Types.get(_ts.length);
     for( int i=0; i<_ts.length; i++ ) ts[i] = _ts[i].dual();
     ts = Types.hash_cons(ts);
-    return new TypeTuple(TTUPLE, !_any, ts);
+    return new TypeTuple().init(!_any, ts);
   }
   // Standard Meet.  Tuples have an infinite extent of 'ALL' for low, or 'ANY'
   // for high.  After the meet, the infinite tail is trimmed.

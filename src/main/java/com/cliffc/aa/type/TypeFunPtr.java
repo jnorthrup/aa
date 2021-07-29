@@ -26,8 +26,11 @@ public final class TypeFunPtr extends Type<TypeFunPtr> {
   public int _nargs;            // Number of formals, including the display
   public Type _disp;            // Display; is_display_ptr
 
-  private TypeFunPtr(BitsFun fidxs, int nargs, Type disp ) { super(TFUNPTR); init(fidxs,nargs,disp); }
-  private void init (BitsFun fidxs, int nargs, Type disp ) { _fidxs = fidxs; _nargs=nargs; _disp=disp; }
+  private TypeFunPtr init(BitsFun fidxs, int nargs, Type disp ) {
+    super.init(TFUNPTR,"");
+    _fidxs = fidxs; _nargs=nargs; _disp=disp;
+    return this;
+  }
   @Override int compute_hash() {
     assert _disp._hash != 0;    // Part of a cyclic hash
     return (TFUNPTR + _fidxs._hash + _nargs + _disp._hash)|256;
@@ -60,13 +63,12 @@ public final class TypeFunPtr extends Type<TypeFunPtr> {
   public String names(boolean debug) { return FunNode.names(_fidxs,new SB(),debug).toString(); }
 
   private static TypeFunPtr FREE=null;
-  @Override protected TypeFunPtr free( TypeFunPtr ret ) { FREE=this; return ret; }
+  private TypeFunPtr free( TypeFunPtr ret ) { FREE=this; return ret; }
   public static TypeFunPtr make( BitsFun fidxs, int nargs, Type disp ) {
     assert disp.is_display_ptr(); // Simple display ptr.  Just the alias.
-    TypeFunPtr t1 = FREE;
-    if( t1 == null ) t1 = new TypeFunPtr(fidxs,nargs,disp);
-    else {   FREE = null;        t1.init(fidxs,nargs,disp); }
-    TypeFunPtr t2 = (TypeFunPtr)t1.hashcons();
+    TypeFunPtr t1 = FREE == null ? new TypeFunPtr() : FREE;
+    FREE = null;
+    TypeFunPtr t2 = t1.init(fidxs,nargs,disp).hashcons();
     return t1==t2 ? t1 : t1.free(t2);
   }
 
@@ -82,11 +84,11 @@ public final class TypeFunPtr extends Type<TypeFunPtr> {
   static final TypeFunPtr[] TYPES = new TypeFunPtr[]{GENERIC_FUNPTR,EMPTY.dual()};
 
   @Override protected TypeFunPtr xdual() {
-    return new TypeFunPtr(_fidxs.dual(),_nargs,_disp.dual());
+    return new TypeFunPtr().init(_fidxs.dual(),_nargs,_disp.dual());
   }
   @Override protected TypeFunPtr rdual() {
     if( _dual != null ) return _dual;
-    TypeFunPtr dual = _dual = new TypeFunPtr(_fidxs.dual(),_nargs,_disp.rdual());
+    TypeFunPtr dual = _dual = new TypeFunPtr().init(_fidxs.dual(),_nargs,_disp.rdual());
     if( _hash != 0 ) {
       assert _hash == compute_hash();
       dual._hash = dual.compute_hash(); // Compute hash before recursion

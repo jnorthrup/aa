@@ -93,19 +93,16 @@ import java.util.function.Predicate;
 
 public class Type<T extends Type<T>> implements Cloneable {
   static private int CNT=1;
-  public int _uid;       // Unique ID, will have gaps, used to uniquely order Types
+  public int _uid;   // Unique ID, will have gaps, used to uniquely order Types
   public int _hash;      // Hash for this Type; built recursively
   byte _type;            // Simple types use a simple enum
   public String _name;   // All types can be named
   T _dual; // All types support a dual notion, eagerly computed and cached here
 
-  protected Type(byte type) { this(type,""); }
-  protected Type(byte type, String name) { _uid(); init(type,name); }
-  void _uid() {
-    _uid=CNT++;
-  }
-  protected void init(byte type) { init(type,""); }
-  protected void init(byte type, String name) { _type=type; _name=name; }
+  protected Type() { _uid = _uid(); }
+  private int _uid() { return CNT++; }
+  @SuppressWarnings("unchecked")
+  protected T init(byte type, String name) { _type=type; _name=name; return (T)this; }
   @Override public final int hashCode( ) { assert _hash!=0; return _hash; }
   // Compute the hash and return it, with all child types already having their
   // hash computed.  Subclasses override this.
@@ -149,13 +146,12 @@ public class Type<T extends Type<T>> implements Cloneable {
   // Object Pooling to handle frequent (re)construction of temp objects being
   // interned.  One-entry pool for now.
   private static Type FREE=null;
-  protected T free( T ret ) { assert getClass()==Type.class; FREE=this; return ret; }
+  private T free( T ret ) { FREE=this; return ret; }
   @SuppressWarnings("unchecked")
   private static Type make( byte type ) {
-    Type t1 = FREE;
-    if( t1 == null ) t1 = new Type(type, "");
-    else { FREE = null; t1.init(type, ""); }
-    Type t2 = t1.hashcons();
+    Type t1 = FREE == null ? new Type() : FREE;
+    FREE = null;
+    Type t2 = t1.init(type,"").hashcons();
     return t1==t2 ? t1 : t1.free(t2);
   }
   // Hash-Cons - all Types are interned in this hash table.  Thus an equality
@@ -164,15 +160,15 @@ public class Type<T extends Type<T>> implements Cloneable {
   private static final ConcurrentHashMap<Type,Type> INTERN = new ConcurrentHashMap<>();
   public static int RECURSIVE_MEET;    // Count of recursive meet depth
   @SuppressWarnings("unchecked")
-  final Type hashcons() {
+  final T hashcons() {
     _hash = compute_hash();     // Set hash
-    Type t2 = INTERN.get(this); // Lookup
+    T t2 = (T)INTERN.get(this); // Lookup
     if( t2!=null ) {            // Found prior
       assert t2._dual != null;  // Prior is complete with dual
       return t2;                // Return prior
     }
     if( RECURSIVE_MEET > 0 )    // Mid-building recursive types; do not intern
-      return this;
+      return (T)this;
     // Not in type table
     _dual = null;                // No dual yet
     INTERN.put(this,this);       // Put in table without dual
@@ -181,12 +177,12 @@ public class Type<T extends Type<T>> implements Cloneable {
     d._hash = d.compute_hash();  // Set dual hash
     _dual = d;
     if( this==d ) return d;      // Self-symmetric?  Dual is self
-    if( equals(d) ) { d.free(null); _dual=(T)this; return this; } // If self symmetric then use self
+    assert !equals(d);           // Self-symmetric is handled by caller
     assert d._dual==null;        // Else dual-dual not computed yet
     assert INTERN.get(d)==null;
     d._dual = (T)this;
     INTERN.put(d,d);
-    return this;
+    return (T)this;
   }
   // Remove a forward-ref type from the interning dictionary, prior to
   // interning it again - as a self-recursive type
@@ -312,10 +308,7 @@ public class Type<T extends Type<T>> implements Cloneable {
 
   // Compute dual right now.  Overridden in subclasses.
   @SuppressWarnings("unchecked")
-  T xdual() {
-    assert is_simple();
-    return (T)new Type((byte)(_type^1));
-  }
+  T xdual() { return (T)new Type().init((byte)(_type^1),""); }
   T rdual() { assert _dual!=null; return _dual; }
 
   // Memoize meet results
@@ -903,7 +896,7 @@ public class Type<T extends Type<T>> implements Cloneable {
   protected Type clone() {
     try {
       Type t = (Type)super.clone();
-      t._uid();
+      t._uid = _uid();
       t._dual = null;
       t._hash = 0;
       if( t instanceof TypeStruct )

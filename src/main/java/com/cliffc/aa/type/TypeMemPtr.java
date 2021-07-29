@@ -25,8 +25,12 @@ public final class TypeMemPtr extends Type<TypeMemPtr> {
   // function call args).
   public TypeObj _obj;          // Meet/join of aliases.  Unused in simple_ptrs in graph nodes.
 
-  private TypeMemPtr(BitsAlias aliases, TypeObj obj ) { super     (TMEMPTR); init(aliases,obj); }
-  private void init (BitsAlias aliases, TypeObj obj ) { super.init(TMEMPTR); _aliases = aliases; _obj=obj; }
+  private TypeMemPtr init(BitsAlias aliases, TypeObj obj ) {
+    super.init(TMEMPTR,"");
+    _aliases = aliases;
+    _obj=obj;
+    return this;
+  }
   @Override int compute_hash() {
     assert _obj._hash != 0;
     return (TMEMPTR + _aliases._hash + _obj._hash)|1;
@@ -59,12 +63,11 @@ public final class TypeMemPtr extends Type<TypeMemPtr> {
   }
 
   private static TypeMemPtr FREE=null;
-  @Override protected TypeMemPtr free( TypeMemPtr ret ) { FREE=this; return ret; }
+  private TypeMemPtr free( TypeMemPtr ret ) { FREE=this; return ret; }
   public static TypeMemPtr make(BitsAlias aliases, TypeObj obj ) {
-    TypeMemPtr t1 = FREE;
-    if( t1 == null ) t1 = new TypeMemPtr(aliases,obj);
-    else { FREE = null;          t1.init(aliases,obj); }
-    TypeMemPtr t2 = (TypeMemPtr)t1.hashcons();
+    TypeMemPtr t1 = FREE == null ? new TypeMemPtr() : FREE;
+    FREE = null;
+    TypeMemPtr t2 = t1.init(aliases,obj).hashcons();
     return t1==t2 ? t1 : t1.free(t2);
   }
 
@@ -76,7 +79,7 @@ public final class TypeMemPtr extends Type<TypeMemPtr> {
   // To break class-init cycle, this is made here, now.
   public static final TypeFld    DISP_FLD= TypeFld.malloc("^",Type.NIL,Access.Final,0);
   public static final TypeStruct DISPLAY = TypeStruct.malloc("",false,TypeFlds.ts(DISP_FLD),true);
-  public static final TypeMemPtr DISPLAY_PTR= new TypeMemPtr(BitsAlias.RECORD_BITS0,DISPLAY );
+  public static final TypeMemPtr DISPLAY_PTR= new TypeMemPtr().init(BitsAlias.RECORD_BITS0,DISPLAY );
   public static final Type       NO_DISP= Type.ANY;
   static {
     DISP_FLD._hash = DISP_FLD.compute_hash();
@@ -120,11 +123,15 @@ public final class TypeMemPtr extends Type<TypeMemPtr> {
   }
 
   @Override protected TypeMemPtr xdual() {
-    return new TypeMemPtr(_aliases.dual(),(TypeObj)_obj.dual());
+    BitsAlias ad = _aliases.dual();
+    TypeObj od = (TypeObj)_obj.dual();
+    if( ad==_aliases && od==_obj )
+      return this;              // Centerline TMP
+    return new TypeMemPtr().init(ad,od);
   }
   @Override TypeMemPtr rdual() {
     if( _dual != null ) return _dual;
-    TypeMemPtr dual = _dual = new TypeMemPtr(_aliases.dual(),(TypeObj)_obj.rdual());
+    TypeMemPtr dual = _dual = new TypeMemPtr().init(_aliases.dual(),(TypeObj)_obj.rdual());
     dual._dual = this;
     if( _hash != 0 ) dual._hash = dual.compute_hash();
     return dual;
