@@ -1248,15 +1248,11 @@ public class TypeStruct extends TypeObj<TypeStruct> {
 
     // Remove the entire new cycle members and recompute their hashes.
     rehash_cyclic(new Ary<>(Type.class), this);
-    assert intern_check();
 
     // Check for a prior.  This can ONLY happen during testing, because the
     // same type name (different lexical scopes; name mangling) cannot be used twice.
     TypeStruct old = (TypeStruct)intern_lookup();
-    if( old != null ) {
-      free(null);  _dual.free(null);
-      assert intern_check();
-      return old; }
+    if( old != null ) { free(null);  _dual.free(null);  return old; }
 
     // Insert all members of the cycle into the hashcons.  If self-symmetric,
     // also replace entire cycle with self at each point.
@@ -1264,7 +1260,6 @@ public class TypeStruct extends TypeObj<TypeStruct> {
     walk( t -> { if( t.interned() ) return false;
         t.retern()._dual.retern(); return true; });
 
-    assert intern_check();
     return this;
   }
 

@@ -203,13 +203,15 @@ public class LoadNode extends Node {
       return get_fld(tobj);
     return tobj.oob();          // No loading from e.g. Strings
   }
-
+  
   @Override public void add_flow_use_extra(Node chg) {
     if( chg==adr() ) Env.GVN.add_flow(mem());  // Address into a Load changes, the Memory can be more alive.
     if( chg==mem() ) Env.GVN.add_flow(mem());  // Memory value lifts to ANY, memory live lifts also.
     if( chg==mem() ) Env.GVN.add_flow(adr());  // Memory value lifts to an alias, address is more alive
     // Memory improves, perhaps Load can bypass Call
     if( chg==mem() && mem().in(0) instanceof CallEpiNode ) Env.GVN.add_reduce(this);
+    // Memory becomes a MrgProj, maybe Load can bypass MrgProj
+    if( chg==mem() && chg instanceof MrgProjNode ) Env.GVN.add_mono(this);
   }
 
   // The only memory required here is what is needed to support the Load

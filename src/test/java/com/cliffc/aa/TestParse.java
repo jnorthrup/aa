@@ -194,9 +194,9 @@ public class TestParse {
     test("0 && 1 || 2 && 3", TypeInt.con(3));    // Precedence
 
     test_obj("x:=y:=0; z=x++ && y++;(x,y,z)", // increments x, but it starts zero, so y never increments
-             TypeStruct.make(TypeInt.con(1),Type.XNIL,Type.XNIL));
+             TypeStruct.make(TypeStruct.tups(TypeInt.con(1),Type.XNIL,Type.XNIL)));
     test_obj("x:=y:=0; x++ && y++; z=x++ && y++; (x,y,z)", // x++; x++; y++; (2,1,0)
-             TypeStruct.make(TypeInt.con(2),TypeInt.con(1),Type.XNIL));
+             TypeStruct.make(TypeStruct.tups(TypeInt.con(2),TypeInt.con(1),Type.XNIL)));
     test("(x=1) && x+2", TypeInt.con(3)); // Def x in 1st position
 
     testerr("1 && (x=2;0) || x+3 && x+4", "'x' not defined prior to the short-circuit",5); // x maybe alive
@@ -483,7 +483,6 @@ public class TestParse {
 
 
   @Test public void testParse08() {
-    Object dummy = Env.GVN; // Force class loading cycle
     // Main issue with the map() test is final assignments crossing recursive
     // not-inlined calls.  Smaller test case:
     test_ptr("tmp=@{val=2;nxt=@{val=1;nxt=0}}; noinline_map={tree -> tree ? @{vv=tree.val&tree.val;nn=noinline_map(tree.nxt)} : 0}; noinline_map(tmp)",
@@ -578,7 +577,7 @@ public class TestParse {
     testerr("x=1+y","Unknown ref 'y'",4);
 
     test("x:=1", TypeInt.TRUE);
-    test_obj("x:=0; a=x; x:=1; b=x; x:=2; (a,b,x)", TypeStruct.make(Type.XNIL,TypeInt.con(1),TypeInt.con(2)));
+    test_obj("x:=0; a=x; x:=1; b=x; x:=2; (a,b,x)", TypeStruct.make(TypeStruct.tups(Type.XNIL,TypeInt.con(1),TypeInt.con(2))));
 
     testerr("x=1; x:=2; x", "Cannot re-assign final val 'x'", 5);
     testerr("x=1; x =2; x", "Cannot re-assign final val 'x'", 5);
@@ -708,7 +707,7 @@ public class TestParse {
     test    ("[3][0]", Type.XNIL);
     test    ("ary = [3]; ary[0]:=2", TypeInt.con(2));
     test_obj("ary = [3]; ary[0]:=0; ary[1]:=1; ary[2]:=2; (ary[0],ary[1],ary[2])", // array create, array storing
-             TypeStruct.make(TypeInt.INT8,TypeInt.INT8,TypeInt.INT8));
+             TypeStruct.make(TypeStruct.tups(TypeInt.INT8,TypeInt.INT8,TypeInt.INT8)));
     testary("0[0]","0 is not a *[]Scalar/obj",1);
     testary("[3] [4]","Index must be out of bounds",5);
     testary("[3] [-1]","Index must be out of bounds",5);

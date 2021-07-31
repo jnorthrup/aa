@@ -68,7 +68,7 @@ public final class FunPtrNode extends UnOrFunPtrNode {
   @Override public UnresolvedNode unk() { return null; }
   // Self short name
   @Override public String xstr() {
-    if( is_dead() || _defs._len==0 ) return "*fun";
+    if( is_dead() || _defs._len==0 || ret()==null) return "*fun";
     int fidx = ret()._fidx;    // Reliably returns a fidx
     FunNode fun = FunNode.find_fidx(fidx);
     return "*"+(fun==null ? ""+fidx : fun.name());
@@ -78,7 +78,7 @@ public final class FunPtrNode extends UnOrFunPtrNode {
     if( is_dead() ) return "DEAD";
     if( _defs._len==0 ) return "MAKING";
     RetNode ret = ret();
-    if( ret.is_copy() ) return "gensym:"+xstr();
+    if( ret==null || ret.is_copy() ) return "gensym:"+xstr();
     FunNode fun = ret.fun();
     return fun==null ? xstr() : fun.str();
   }
