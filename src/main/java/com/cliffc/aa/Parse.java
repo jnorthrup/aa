@@ -113,6 +113,7 @@ public class Parse implements Comparable<Parse> {
     _gvn.gcp (GVNGCM.Mode.Opto,scope()); // Global Constant Propagation
     _gvn.iter(GVNGCM.Mode.PesiCG); // Re-check all ideal calls now that types have been maximally lifted
     _e._scope.unkeep();
+    assert Type.intern_check();
     return gather_errors();
   }
 

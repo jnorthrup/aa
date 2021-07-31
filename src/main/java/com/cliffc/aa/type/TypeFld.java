@@ -75,7 +75,9 @@ public class TypeFld extends Type<TypeFld> {
   @Override protected TypeFld xdual() { return malloc(sdual(_fld),_t._dual,_access.dual(),odual(_order)); }
   @Override protected TypeFld rdual() {
     if( _dual != null ) return _dual;
-    TypeFld dual = _dual = malloc(sdual(_fld),_t.rdual(),_access.dual(),odual(_order));
+    // Make a dual without recursion
+    TypeFld dual = _dual = malloc(sdual(_fld),null,_access.dual(),odual(_order));
+    dual.setX(_t.rdual()); // Now recurse
     dual._dual = this;
     assert _hash!=0 && dual._hash!=0;
     return dual;

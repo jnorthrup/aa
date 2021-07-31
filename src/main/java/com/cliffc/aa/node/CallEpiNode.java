@@ -235,6 +235,8 @@ public final class CallEpiNode extends Node {
       }
       actual._live = arg._live; // Set it before CSE during init1
       arg.add_def(actual.init1());
+      if( arg._val.is_con() ) // Added an edge, value may change or go in-error
+        GVN.add_flow_defs(arg); // So use-liveness changes
     }
 
     // Add matching control to function via a CallGraph edge.

@@ -52,30 +52,26 @@ These can be scope-alloced from a free-list.
 
  */
 public class TypeStruct extends TypeObj<TypeStruct> {
-  public TypeFld[] _flds;       // The fields.  Effectively final.  Public for iteration.
-  public boolean _open; // Fields after _fld.length are treated as ALL (or ANY)
-  public boolean _was_fref; // Only used for making a forward reference type
+  public TypeFld[] _flds; // The fields.  Effectively final.  Public for iteration.
+  public boolean _open;   // Fields after _fld.length are treated as ALL (or ANY)
 
-  public boolean _cyclic; // Type is cyclic.  This is a summary property, not a description of value sets, hence is not in the equals or hash
-  private TypeStruct init( String name, boolean any, TypeFld[] flds, boolean open) {
+  public boolean _cyclic; // Type is cyclic.  This is a summary property, not a part of the type, hence is not in the equals nor hash
+  private TypeStruct init( String name, boolean any, TypeFld[] flds, boolean open ) {
     super.init(TSTRUCT, name, any, any);
     _flds  = flds;
     _open  = open;
     return this;
   }
 
-  // Precomputed hash code.  Note that it can NOT depend on the field types -
-  // because during recursive construction the types are not available.  Also
-  // if the struct is a forward-reference, it does not even have field names
-  // yet.  In this case, the hash comes from the name alone.
-
-
-  
+  // Hash code computation.
+  // Fairly subtle, because the typical hash code is built up from the hashes of
+  // its parts, but the parts are not available during construction of a cyclic type.
+  // TODO: If not cyclic, do a proper recursive hash
   @Override public int compute_hash() {
-    int hash = super.compute_hash()+(_open?1023:0), hash1=hash;
-    if( !_was_fref )            // One-time forward references
-      // Not a forwards-ref; compute hash from field names and orders and access.
-      for( TypeFld fld : _flds ) { assert fld._hash!=0; hash = (hash + fld._hash) | (hash >>> 17); }
+    int hash1 = super.compute_hash(), hash = hash1 +(_open?1023:0);
+    assert hash1 != 0;
+    // Compute hash from field names and orders and access.
+    for( TypeFld fld : _flds ) { assert fld._hash!=0; hash = (hash + fld._hash) | (hash >>> 17); }
     return hash == 0 ? hash1 : hash;
   }
 
@@ -180,8 +176,8 @@ public class TypeStruct extends TypeObj<TypeStruct> {
   // Unlike other types, TypeStruct might make cyclic types for which a
   // DAG-like bottom-up-remove-dups approach cannot work.
   private static TypeStruct FREE=null;
-  private TypeStruct free( TypeStruct ret ) { _hash=0; _flds=null; FREE=this; return ret; }
-  public static TypeStruct malloc( String name, boolean any, TypeFld[] flds, boolean open ) {
+  private TypeStruct free( TypeStruct ret ) { _hash=0; _flds=null; _cyclic=false; FREE=this; return ret; }
+  public  static TypeStruct malloc( String name, boolean any, TypeFld[] flds, boolean open ) {
     assert check_name(name);
     TypeStruct t1 = FREE == null ? new TypeStruct() : FREE;
     FREE = null;
@@ -263,14 +259,18 @@ public class TypeStruct extends TypeObj<TypeStruct> {
   // Recursive dual
   @Override TypeStruct rdual() {
     if( _dual != null ) return _dual;
+    // Clone the fields for the recursive dual, and grab the field duals
     TypeFld[] flds = TypeFlds.get(_flds.length);
-    for( int i=0; i<_flds.length; i++ ) flds[i] = _flds[i].xdual();
+    for( int i=0; i<_flds.length; i++ )
+      // Some fields are interned already, the cyclic ones are not.
+      flds[i] = _flds[i].interned() ? _flds[i]._dual : _flds[i].xdual();
     TypeStruct dual = _dual = new TypeStruct().init(_name,!_any,flds,!_open);
     if( _hash != 0 ) {
       assert _hash == compute_hash();
       dual._hash = dual.compute_hash(); // Compute hash before recursion
     }
-    for( int i=0; i<_flds.length; i++ ) flds[i] = _flds[i].rdual();
+    for( int i=0; i<_flds.length; i++ )
+      flds[i] = _flds[i].interned() ? _flds[i]._dual : _flds[i].rdual();
     dual._flds = TypeFlds.hash_cons(flds); // hashcons cyclic arrays
     dual._dual = this;
     dual._cyclic = _cyclic;
@@ -667,7 +667,7 @@ public class TypeStruct extends TypeObj<TypeStruct> {
     // Structs never change their hash based on field types.  Set their hash first.
     for( int i=0; i<reaches._len; i++ ) {
       Type t = reaches.at(i);
-      if( t instanceof TypeStruct )
+      if( t instanceof TypeStruct || t instanceof TypeFld )
         t._hash = t.compute_hash();
     }
     // TMPs depend on Structs
@@ -722,13 +722,22 @@ public class TypeStruct extends TypeObj<TypeStruct> {
         case TSTRUCT:           // Update all TypeStruct fields
           TypeStruct ts = (TypeStruct)t0;
           for( int i=0; i<ts._flds.length; i++ ) {
-            Type tfld = ts._flds[i]._t, tfld2 = ufind(tfld);
+            TypeFld tfld = ts._flds[i], tfld2 = ufind(tfld);
             if( tfld != tfld2 ) {
               progress = true;
-              ts._flds[i].setX(tfld2);
+              ts._flds[i] = tfld2;
             }
           }
           break;
+        case TFLD:              // Update all TFlds
+          TypeFld tfld = (TypeFld)t0;
+          Type tft = tfld._t, t2 = ufind(tft);
+          if( tft != t2 ) {
+            progress = true;
+            tfld.setX(t2);
+          }
+          break;
+
         default: break;
         }
         DUPS.put(t0);
@@ -775,26 +784,26 @@ public class TypeStruct extends TypeObj<TypeStruct> {
 
   // Reachable collection of TypeMemPtr and TypeStruct.
   // Optionally keep interned Types.  List is pre-order.
-  public Ary<Type> reachable() { return reachable(false); }
-  private Ary<Type> reachable( boolean keep ) {
+  public Ary<Type> reachable() {
     Ary<Type> work = new Ary<>(new Type[1],0);
-    push(work, keep, this);
+    push(work, this);
     int idx=0;
     while( idx < work._len ) {
       Type t = work.at(idx++);
       switch( t._type ) {
-      case TMEMPTR:  push(work, keep, ((TypeMemPtr)t)._obj); break;
-      case TFUNPTR:  push(work, keep, ((TypeFunPtr)t)._disp); break;
-      case TSTRUCT:  for( TypeFld tf : ((TypeStruct)t)._flds ) push(work, keep, tf._t); break;
+      case TMEMPTR:  push(work, ((TypeMemPtr)t)._obj ); break;
+      case TFUNPTR:  push(work, ((TypeFunPtr)t)._disp); break;
+      case TFLD   :  push(work, ((TypeFld   )t)._t   ); break;
+      case TSTRUCT:  for( TypeFld tf : ((TypeStruct)t)._flds ) push(work, tf); break;
       default: break;
       }
     }
     return work;
   }
-  private void push( Ary<Type> work, boolean keep, Type t ) {
+  private void push( Ary<Type> work, Type t ) {
     int y = t._type;
-    if( (y==TMEMPTR || y==TFUNPTR || y==TSTRUCT) &&
-        (keep || t._hash==0 || !t.interned()) && work.find(t)==-1 )
+    if( (y==TMEMPTR || y==TFUNPTR || y==TSTRUCT || y==TFLD) &&
+        (t._hash == 0 || !t.interned()) && work.find(t)==-1 )
       work.push(t);
   }
 
@@ -838,20 +847,23 @@ public class TypeStruct extends TypeObj<TypeStruct> {
     switch( t._type ) {
     case TMEMPTR: get_cyclic(bcs,bs,stack,((TypeMemPtr)t)._obj ); break;
     case TFUNPTR: get_cyclic(bcs,bs,stack,((TypeFunPtr)t)._disp); break;
-    case TSTRUCT: bs.set(t._uid); for( TypeFld fld : ((TypeStruct)t)._flds ) get_cyclic(bcs,bs,stack,fld._t); break;
+    case TFLD   : get_cyclic(bcs,bs,stack,((TypeFld   )t)._t   ); break;
+    case TSTRUCT: bs.set(t._uid); for( TypeFld fld : ((TypeStruct)t)._flds ) get_cyclic(bcs,bs,stack,fld); break;
     }
     stack.pop();                // Pop, not part of anothers cycle
     return bcs;
   }
-  @SuppressWarnings("unchecked")
   private void mark_cyclic( BitSet bcs, Ary<Type> reaches ) {
     for( Type t : reaches ) {
-      if( t instanceof TypeStruct ) {
-        ((TypeStruct)t)._cyclic = bcs.get(t._uid);
-        TypeStruct ts = (TypeStruct)t;
-        ts._flds = TypeFlds.hash_cons(ts._flds); // hashcons cyclic arrays
+      if( bcs.get(t._uid) ) {
+        assert t.intern_lookup()==null; // Not interned
+        t._dual=null;           // Remove any duals, so re-inserted clean
+        if( t instanceof TypeStruct ) {
+          TypeStruct ts = (TypeStruct)t;
+          ts._cyclic = true;
+          ts._flds = TypeFlds.hash_cons(ts._flds); // hashcons cyclic arrays
+        }
       }
-      t._dual=null;             // Remove any duals, so re-inserted clean
     }
   }
 
@@ -937,6 +949,7 @@ public class TypeStruct extends TypeObj<TypeStruct> {
     TypeStruct ts = (TypeStruct)t;
     for( TypeFld fld : ts._flds ) {
       Type tt = fld._t;
+      assert fld.interned()==tt.interned();
       if( !tt.interned() ||     // Not interned internal, then this is not finished
           (tt instanceof TypeMemPtr && // Or has internal dull pointers
            ((TypeMemPtr)tt)._obj == TypeObj.ISUSED) )
@@ -960,7 +973,7 @@ public class TypeStruct extends TypeObj<TypeStruct> {
     TypeMemPtr dptr = dull_cache.get(dull._aliases);
     if( !dptr.interned() )      // Closed a cycle
       return dptr; // Not-yet-sharp and not interned; return the work-in-progress
-    // Copy, replace dull with not-interned dull clone
+    // Copy, replace dull with not-interned dull clone.  Fields are also cloned, not interned.
     TypeStruct dts2 = ((TypeStruct)dptr._obj)._clone();
     TypeMemPtr dptr2 = (TypeMemPtr)dptr.clone();
     dptr2._obj = dts2;  dptr2._hash = dptr2.compute_hash();
@@ -972,20 +985,23 @@ public class TypeStruct extends TypeObj<TypeStruct> {
       if( t instanceof TypeMemPtr ) // For TMP, recurse on dull pointers.
         dts2_fld.setX(_sharp(mem,((TypeMemPtr)t),dull_cache));
       if( t instanceof TypeFunPtr ) {
-        TypeFunPtr tf = (TypeFunPtr)t;
-        if( tf._disp == Type.ANY )
-          continue;  // No pointer to sharpen
-        TypeMemPtr dptr3 = _sharp(mem,(TypeMemPtr)tf._disp,dull_cache);
-        dts2_fld.setX(dptr3.interned()             // Sharp return?
-                      ? tf.make_from(dptr3)        // Make sharp TFP field
-                      : tf._sharpen_clone(dptr3)); // Make dull  TFP field
+        TypeFunPtr tf = (TypeFunPtr) t;
+        if( tf._disp instanceof TypeMemPtr ) { // Need  a pointer to sharpen
+          TypeMemPtr dptr3 = _sharp(mem, (TypeMemPtr) tf._disp, dull_cache);
+          dts2_fld.setX(dptr3.interned()             // Sharp return?
+            ? tf.make_from(dptr3)        // Make sharp TFP field
+            : tf._sharpen_clone(dptr3)); // Make dull  TFP field
+        }
       }
+      if( dts2_fld._t.interned() )
+        dts2._flds[i] = dts2_fld.hashcons_free();
     }
     if( !_is_sharp(dts2) ) return dptr2; // Return the work-in-progress
-    // Then copied field typesare all sharp and interned.
+    // Then copied field types are all sharp and interned.
     // Intern the fields themselves.
     for( int i=0; i<dts2._flds.length; i++ )
-      dts2._flds[i] = dts2._flds[i].hashcons_free();
+      if( !dts2._flds[i]._t.interned() )
+        dts2._flds[i] = dts2._flds[i].hashcons_free();
     dull_cache.remove(dull._aliases);// Move the entry from dull cache to sharp cache
     TypeStruct sts = dts2.hashcons_free();
     return mem.sharput(dull,dull.make_from(sts));
@@ -1047,7 +1063,7 @@ public class TypeStruct extends TypeObj<TypeStruct> {
     Access pfin = precise ? fin : _flds[idx]._access.meet(fin);
     TypeFld[] flds = TypeFlds.copyOf(_flds,_flds.length);
     flds[idx] = TypeFld.make(fld,pval,pfin,idx);
-    return malloc(_name,_any,flds,_open).hashcons_free();
+    return make(_name,_any,flds,_open);
   }
 
   // Keep the same basic type, and meet related fields.  Type error if basic
@@ -1154,10 +1170,9 @@ public class TypeStruct extends TypeObj<TypeStruct> {
     return false;
   }
 
-  @SuppressWarnings("unchecked")
   @Override void walk( Predicate<Type> p ) {
     if( p.test(this) )
-      for( TypeFld fld : _flds ) fld._t.walk(p);
+      for( TypeFld fld : _flds ) fld.walk(p);
   }
 
 
@@ -1182,6 +1197,37 @@ public class TypeStruct extends TypeObj<TypeStruct> {
   public TypeStruct merge_recursive_type( TypeStruct ts ) {
     assert fref_alias()!=BitsAlias.REC;
     assert intern_check();
+     /*     TODO:
+            even with free name change
+            was buggy with not interning the TypeFld from intial DISP_FLD
+
+            but the name/no-hash game doesn't work because a name+plus_hash
+            does not hit, even if everything else is the same because
+            hashes do not match.  So peels an iteration by mistake before
+            hitting the cycle.  Which right now causes a simple ISA test
+            to fail in testParse.
+
+            Theory#17
+            Drop free name change, figure on re-hitting old named cycle test-to-test.
+
+            During install here, walk as expected but UNTERN everything in the cycle.
+            Close the cycle & check the hash.  Then check for a hit.
+
+            Because this type is "late to the party" and saw any amount of AA code,
+            the constructor type got spread far and wide.  So would have to do a
+            type-system-wide visit to update all pointers to the correct version.
+
+            Instead walk the cycle, and flag as forwarding.
+            And on EVERY FREAK'N ACCESS TO RAW TYPES have to play the forwarding game.  Ugh.
+
+            Which is why i need to sleep on this.
+
+            Only happens for mutually recursive types with random AA code interspersed.
+
+            Alternative: recursive types allowed, but only All At Once.  I'll save the constructor construction until the mut-rec is done.
+            Alternative: Do The Big Walk and update all types.
+      */
+
     // Make both nil and not-nil variants.  These *should be* the only pointers
     // to 'this' getting its hash whacked.
     int alias = fref_alias();
@@ -1194,7 +1240,6 @@ public class TypeStruct extends TypeObj<TypeStruct> {
     ts.  untern()._dual.untern();
     // Hack type and it's dual.  Type is now recursive.
     _flds = ts._flds; _dual._flds = ts._dual._flds;
-    _cyclic= _dual._cyclic = true;
     _open  = _dual._open   = false;
     // Hash changes, e.g. field names.
     _hash = compute_hash();  _dual._hash = _dual.compute_hash();
@@ -1222,7 +1267,9 @@ public class TypeStruct extends TypeObj<TypeStruct> {
     assert intern_check();
     return this;
   }
-  // Classic cycle-finding algorithm.
+
+  // Classic cycle-finding algorithm.  The tail has been folded into the head.
+  // The head (old fref), and none of the guts are marked cyclic.
   private void rehash_cyclic(Ary<Type> stack, Type t ) {
     if( stack._len > 0 && t==this ) {    // If visiting again... have found a cycle t->....->this
       // All on the stack are flagged as being part of a cycle
@@ -1233,18 +1280,21 @@ public class TypeStruct extends TypeObj<TypeStruct> {
           ((TypeStruct)st)._cyclic = ((TypeStruct)st)._dual._cyclic = true;
         st._hash = st._dual._hash = 0; // Clear.  Cannot compute until all children found/cycles walked.
       }
-      System.out.println();
+      _cyclic = _dual._cyclic = true;
     } else {
-      if( t instanceof TypeMemPtr || t instanceof TypeFunPtr || t instanceof TypeStruct ) {
+      if( t instanceof TypeMemPtr || t instanceof TypeFunPtr || t instanceof TypeStruct || t instanceof TypeFld ) {
         stack.push(t);              // Push on stack, in case a cycle is found
         if( t instanceof TypeMemPtr ) {
           rehash_cyclic(stack,((TypeMemPtr)t)._obj);
         } else if( t instanceof TypeFunPtr ) {
           rehash_cyclic(stack,((TypeFunPtr)t)._disp);
+        } else if( t instanceof TypeFld ) {
+          rehash_cyclic(stack,((TypeFld)t)._t);
         } else {
-          for( int i=1; i<((TypeStruct)t)._flds.length; i++ )
-            rehash_cyclic(stack, ((TypeStruct)t)._flds[i]._t);
-          assert ((TypeStruct)t)._cyclic;
+          TypeStruct ts = (TypeStruct)t;
+          if( !ts._cyclic )    // Part of some other cycle
+            for( int i=0; i<ts._flds.length; i++ )
+              rehash_cyclic(stack, ts._flds[i]);
         }
         if( t._hash==0 ) {    // If part of a cycle, hash was cleared.  Rehash.
           t      ._hash=t      .compute_hash();

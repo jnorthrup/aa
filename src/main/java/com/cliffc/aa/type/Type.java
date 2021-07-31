@@ -131,7 +131,7 @@ public class Type<T extends Type<T>> implements Cloneable {
   public SB str( SB sb, VBitSet dups, TypeMem mem, boolean debug ) { return sb.p(_name).p(STRS[_type]); }
 
   // Shallow array compare, using '==' instead of 'equals'.  Since elements are
-  // interned, this is the same as 'equals' except asympotically faster unless
+  // interned, this is the same as 'equals' except asymptotically faster unless
   // there is a type-cycle, then infinitely faster.
   public static boolean eq( Type[] t0, Type[] t1 ) {
     if( t0==t1 ) return true;
@@ -165,6 +165,7 @@ public class Type<T extends Type<T>> implements Cloneable {
     T t2 = (T)INTERN.get(this); // Lookup
     if( t2!=null ) {            // Found prior
       assert t2._dual != null;  // Prior is complete with dual
+      assert this != t2;        // Do not hashcons twice, should not get self back
       return t2;                // Return prior
     }
     if( RECURSIVE_MEET > 0 )    // Mid-building recursive types; do not intern
@@ -207,14 +208,37 @@ public class Type<T extends Type<T>> implements Cloneable {
   Type intern_lookup() { return INTERN.get(this); }
   static int intern_size() { return INTERN.size(); }
   public static boolean intern_check() {
-    for( Type k : INTERN.keySet() )
-      if( k.intern_check0() ) return false;
-    return true;
+    int errs=0;
+    for( Type k : INTERN.keySet() ) {
+      Type v = INTERN.get(k);
+      if( !k.intern_check0(v) ) {
+        System.out.println("INTERN_CHECK FAIL: "+k._uid+":"+k+" vs "+v._uid+":"+v);
+        errs++;
+      }
+    }
+    return errs==0;
   }
-  private boolean intern_check0() {
-    Type v = INTERN.get(this);
-    if( this == v && _dual!=null && _dual._dual==this && compute_hash()==_hash ) return false;
-    System.out.println("INTERN_CHECK FAIL: "+_uid+":"+this+" vs "+v._uid+":"+v);
+  private boolean intern_check0(Type v) {
+    if( this != v || _dual==null || _dual._dual!=this || compute_hash()!=_hash ) return false;
+    switch( _type ) {
+    case TSTRUCT:
+      TypeStruct ts = (TypeStruct)this;
+      for( TypeFld fld : ts._flds )
+        if( INTERN.get(fld)==null )
+          return false;
+      break;
+    case TMEMPTR:
+      TypeMemPtr tmp = (TypeMemPtr)this;
+      if( INTERN.get(tmp._obj)==null )
+        return false;
+      break;
+    case TFLD:
+      TypeFld fld = (TypeFld)this;
+      if( INTERN.get(fld._t)==null )
+        return false;
+      break;
+    default: break;
+    }
     return true;
   }
   // Debugging helper

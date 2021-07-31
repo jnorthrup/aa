@@ -86,7 +86,7 @@ public final class TypeMemPtr extends Type<TypeMemPtr> {
     DISPLAY._hash = DISPLAY.compute_hash();
     DISPLAY_PTR._hash = DISPLAY_PTR.compute_hash(); // Filled in during DISPLAY.install_cyclic
     assert DISPLAY.at(0) == Type.NIL;
-    DISPLAY.fld(0).setX(TypeMemPtr.DISPLAY_PTR);
+    DISP_FLD.setX(TypeMemPtr.DISPLAY_PTR);
     DISPLAY.install_cyclic(new Ary<>(Types.ts(DISPLAY ,TypeMemPtr.DISPLAY_PTR)));
     assert DISPLAY.is_display();
   }
