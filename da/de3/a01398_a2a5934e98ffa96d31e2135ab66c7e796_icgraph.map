@@ -1,0 +1,12 @@
+<map id="com.cliffc.aa.Parse.stmt" name="com.cliffc.aa.Parse.stmt">
+<area shape="rect" id="node1" title="A statement is a list of variables to final&#45;assign or re&#45;assign, and an ifex for the value." alt="" coords="1748,36,1927,63"/>
+<area shape="rect" id="node2" href="$da/de3/a01398.html#a5e1b4411da5e7400c4fc45d4b3dbd795" title="Parse an if&#45;expression, with lazy eval on the branches." alt="" coords="5,36,179,63"/>
+<area shape="rect" id="node3" href="$da/de3/a01398.html#adf95c17fe0de5cfff574ee89b78f0d37" title=" " alt="" coords="1515,67,1700,93"/>
+<area shape="rect" id="node4" href="$da/de3/a01398.html#ab502dae0cf2cae3c0ade2422e579fce2" title="Any number field&#45;lookups or function applications, then an optional assignment term = id++ | id– term..." alt="" coords="1518,117,1697,144"/>
+<area shape="rect" id="node5" href="$da/de3/a01398.html#a6397933ff168ada64e7209d9c82122de" title=" " alt="" coords="1319,110,1467,151"/>
+<area shape="rect" id="node6" href="$da/de3/a01398.html#ac81c4d62901080f0883b0e984f7f0062" title=" " alt="" coords="684,117,868,144"/>
+<area shape="rect" id="node9" href="$da/de3/a01398.html#a58b0dba4e9b60d9e9639eea530b6077b" title=" " alt="" coords="1112,181,1271,222"/>
+<area shape="rect" id="node7" href="$da/de3/a01398.html#af41d3ed90c69faf4279701b6aa98bd3a" title="Parse an expression, a series of terms separated by binary operators." alt="" coords="459,117,636,144"/>
+<area shape="rect" id="node8" href="$da/de3/a01398.html#a6e92b63110e4ed2e5bf7533656730f3f" title="Parse a lisp&#45;like function application." alt="" coords="227,117,411,144"/>
+<area shape="rect" id="node10" href="$da/de3/a01398.html#ade4bf32252a86275a1ec393dea94ed6f" title=" " alt="" coords="916,231,1064,273"/>
+</map>

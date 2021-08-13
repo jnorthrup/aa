@@ -1,0 +1,34 @@
+<map id="com.cliffc.aa.Parse.ctrl" name="com.cliffc.aa.Parse.ctrl">
+<area shape="rect" id="node1" title=" " alt="" coords="3892,761,4061,787"/>
+<area shape="rect" id="node2" href="$da/de3/a01398.html#add75d4940edeaef88472954f30ea8c70" title=" " alt="" coords="3655,533,3837,559"/>
+<area shape="rect" id="node4" href="$da/de3/a01398.html#ac81c4d62901080f0883b0e984f7f0062" title=" " alt="" coords="1144,534,1328,561"/>
+<area shape="rect" id="node7" href="$da/de3/a01398.html#ade4bf32252a86275a1ec393dea94ed6f" title=" " alt="" coords="1376,492,1524,533"/>
+<area shape="rect" id="node10" href="$da/de3/a01398.html#a5e1b4411da5e7400c4fc45d4b3dbd795" title="Parse an if&#45;expression, with lazy eval on the branches." alt="" coords="465,1141,639,1167"/>
+<area shape="rect" id="node13" href="$da/de3/a01398.html#ab502dae0cf2cae3c0ade2422e579fce2" title="Any number field&#45;lookups or function applications, then an optional assignment term = id++ | id– term..." alt="" coords="1977,786,2155,813"/>
+<area shape="rect" id="node15" href="$da/de3/a01398.html#ab5f56822b1234ac422a988a689632a42" title="Parse a factor, a leaf grammar token fact = num // number fact = &quot;string&quot; // string fact = (stmts) //..." alt="" coords="2471,1166,2645,1193"/>
+<area shape="rect" id="node18" href="$da/de3/a01398.html#ac627d3aaaed60f3d4a68bc4431dba21e" title=" " alt="" coords="2723,710,2890,737"/>
+<area shape="rect" id="node19" href="$da/de3/a01398.html#aa40dcde3dd2de1189f636cf5e5e865c7" title=" " alt="" coords="3196,245,3360,287"/>
+<area shape="rect" id="node21" href="$da/de3/a01398.html#a4092ce9560331b1ca5975ee8123a3a00" title=" " alt="" coords="2455,761,2661,787"/>
+<area shape="rect" id="node22" href="$da/de3/a01398.html#aeb129ff47f6a1c82ba9635c2ad0731b9" title=" " alt="" coords="3648,1495,3844,1522"/>
+<area shape="rect" id="node24" href="$da/de3/a01398.html#a3d2b9c687f747bb1f28fbf64f126c002" title=" " alt="" coords="2966,1108,3133,1149"/>
+<area shape="rect" id="node25" href="$da/de3/a01398.html#aba7aed0aa9ad4c8e1ad1246b19f6e073" title=" " alt="" coords="2719,1369,2895,1395"/>
+<area shape="rect" id="node27" href="$da/de3/a01398.html#a14d8661f587e6f33e2db02a3ae52a196" title=" " alt="" coords="3195,1225,3361,1267"/>
+<area shape="rect" id="node31" href="$da/de3/a01398.html#a038ffcbe6d0ca66824152be2c6aa386f" title="Parse anonymous struct; the opening &quot;@{&quot; already parsed." alt="" coords="2714,203,2899,230"/>
+<area shape="rect" id="node32" href="$da/de3/a01398.html#aa2480f6bad6236a14375654b61118346" title=" " alt="" coords="3409,1285,3600,1327"/>
+<area shape="rect" id="node3" href="$da/de3/a01398.html#a94ed5d5f61b9f2ca3f52c9b4886408de" title=" " alt="" coords="3417,533,3593,559"/>
+<area shape="rect" id="node9" href="$da/de3/a01398.html#a6e92b63110e4ed2e5bf7533656730f3f" title="Parse a lisp&#45;like function application." alt="" coords="687,1065,871,1091"/>
+<area shape="rect" id="node14" href="$da/de3/a01398.html#a4190f8505e784622f1976492ded413fa" title="A balanced operator as a fact()." alt="" coords="2716,659,2897,686"/>
+<area shape="rect" id="node17" href="$da/de3/a01398.html#a4a886c4ada30f2e32e70151037fd7118" title=" " alt="" coords="2952,457,3147,483"/>
+<area shape="rect" id="node20" href="$da/de3/a01398.html#af4bbf26ee356318a4ab80490f56074f8" title="Parse a tuple; first stmt but not the &#39;,&#39; parsed." alt="" coords="2716,862,2897,889"/>
+<area shape="rect" id="node5" href="$da/de3/a01398.html#a6397933ff168ada64e7209d9c82122de" title=" " alt="" coords="1779,597,1927,639"/>
+<area shape="rect" id="node8" href="$da/de3/a01398.html#af41d3ed90c69faf4279701b6aa98bd3a" title="Parse an expression, a series of terms separated by binary operators." alt="" coords="919,1115,1096,1142"/>
+<area shape="rect" id="node6" href="$da/de3/a01398.html#a58b0dba4e9b60d9e9639eea530b6077b" title=" " alt="" coords="1572,633,1731,675"/>
+<area shape="rect" id="node11" href="$da/de3/a01398.html#a2a5934e98ffa96d31e2135ab66c7e796" title="A statement is a list of variables to final&#45;assign or re&#45;assign, and an ifex for the value." alt="" coords="239,1267,417,1294"/>
+<area shape="rect" id="node12" href="$da/de3/a01398.html#adf95c17fe0de5cfff574ee89b78f0d37" title=" " alt="" coords="5,1382,191,1409"/>
+<area shape="rect" id="node16" href="$da/de3/a01398.html#a7056d9016c6762ee436ae04e04476d3b" title="Parse an optionally typed factor tfact = fact[:type]." alt="" coords="2217,1014,2395,1041"/>
+<area shape="rect" id="node23" href="$d7/d08/a00378.html#adfa998cc8d33a1434e6d9cfe2330acec" title=" " alt="" coords="2205,1521,2407,1547"/>
+<area shape="rect" id="node26" href="$da/de3/a01398.html#a7de58cb94e034d32c45310fa8d87f292" title="A type&#45;statement assigns a type to a type variable." alt="" coords="1975,1357,2157,1383"/>
+<area shape="rect" id="node28" href="$da/de3/a01398.html#a61ed0a2a96fb3fff98c605e0ba745ec0" title=" " alt="" coords="2966,1353,3133,1395"/>
+<area shape="rect" id="node29" href="$da/de3/a01398.html#a88d60473d061966c54ab5defad614c9f" title=" " alt="" coords="2952,913,3147,939"/>
+<area shape="rect" id="node30" href="$da/de3/a01398.html#a56aae37b1b4045aa766f4d71eddb75e5" title=" " alt="" coords="2709,913,2904,939"/>
+</map>

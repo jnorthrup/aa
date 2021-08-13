@@ -1,0 +1,34 @@
+<map id="com.cliffc.aa.node.Node.tvar" name="com.cliffc.aa.node.Node.tvar">
+<area shape="rect" id="node1" title=" " alt="" coords="3108,427,3317,454"/>
+<area shape="rect" id="node2" href="$d7/df7/a01074.html#a4deef8ec20cb07b8dfe2b159699f6bdf" title=" " alt="" coords="2835,136,3038,177"/>
+<area shape="rect" id="node10" href="$da/de3/a01398.html#aba7aed0aa9ad4c8e1ad1246b19f6e073" title=" " alt="" coords="2849,234,3025,261"/>
+<area shape="rect" id="node23" href="$df/db5/a01158.html#ace82cd4668c17501b3d5a5ec613c46dd" title=" " alt="" coords="2832,285,3041,311"/>
+<area shape="rect" id="node24" href="$d9/de4/a01346.html#a129ecc446a6c5ea1d1c97ef71aee000f" title=" " alt="" coords="2817,335,3057,362"/>
+<area shape="rect" id="node25" href="$da/d17/a01046.html#a432fc5ded938baddc20f454a49ca8713" title=" " alt="" coords="2847,387,3027,428"/>
+<area shape="rect" id="node26" href="$da/d4e/a01106.html#afcb5624c73e740ad4229040d517be300" title=" " alt="" coords="2833,452,3040,493"/>
+<area shape="rect" id="node27" href="$d0/d56/a01014.html#a6145435e178032428ea90847dc406027" title=" " alt="" coords="2815,518,3059,545"/>
+<area shape="rect" id="node28" href="$d7/df7/a01074.html#a1d1100d262e106ad80eb1485f5a36e4f" title=" " alt="" coords="2835,569,3038,611"/>
+<area shape="rect" id="node29" href="$d2/dff/a01374.html#a9d23f8a33f9cffe51f02743e23ede58a" title=" " alt="" coords="2847,635,3026,676"/>
+<area shape="rect" id="node30" href="$d0/dfb/a01066.html#a8605ee2daa9c99aa8f72c2ccce7b03be" title=" " alt="" coords="2813,701,3060,727"/>
+<area shape="rect" id="node3" href="$d7/df7/a01074.html#a9bcaff2ad9c6f184dc22ff46a8eddfcf" title=" " alt="" coords="2560,39,2763,80"/>
+<area shape="rect" id="node5" href="$da/d4e/a01106.html#a87c5f9b146d35db9b977a5da480ecbe1" title=" " alt="" coords="2558,136,2765,177"/>
+<area shape="rect" id="node4" href="$d6/d40/a01114.html#a8b187c4fa25fb75fa518485716223dfd" title=" " alt="" coords="2308,5,2503,47"/>
+<area shape="rect" id="node6" href="$d0/d2b/a01010.html#ab379c52becb0c5ae2aea5dfa6046eea2" title=" " alt="" coords="2301,71,2509,112"/>
+<area shape="rect" id="node8" href="$d6/d40/a01114.html#a270d0e54a1e6fc4072bc3d970cffcae5" title=" " alt="" coords="2308,136,2503,177"/>
+<area shape="rect" id="node9" href="$d2/dff/a01374.html#a7a1699aaa4eea6cc12c410125d5762a4" title=" " alt="" coords="2316,201,2495,243"/>
+<area shape="rect" id="node7" href="$d0/d2b/a01010.html#a88196b80c9958b84e83d3d5e8967ec48" title=" " alt="" coords="1975,78,2253,105"/>
+<area shape="rect" id="node11" href="$da/de3/a01398.html#ab5f56822b1234ac422a988a689632a42" title="Parse a factor, a leaf grammar token fact = num // number fact = &quot;string&quot; // string fact = (stmts) //..." alt="" coords="2575,250,2748,277"/>
+<area shape="rect" id="node12" href="$da/de3/a01398.html#a7056d9016c6762ee436ae04e04476d3b" title="Parse an optionally typed factor tfact = fact[:type]." alt="" coords="2316,267,2495,294"/>
+<area shape="rect" id="node13" href="$da/de3/a01398.html#ab502dae0cf2cae3c0ade2422e579fce2" title="Any number field&#45;lookups or function applications, then an optional assignment term = id++ | id– term..." alt="" coords="2025,267,2203,294"/>
+<area shape="rect" id="node14" href="$da/de3/a01398.html#a6397933ff168ada64e7209d9c82122de" title=" " alt="" coords="1779,171,1927,212"/>
+<area shape="rect" id="node15" href="$da/de3/a01398.html#ac81c4d62901080f0883b0e984f7f0062" title=" " alt="" coords="1144,205,1328,231"/>
+<area shape="rect" id="node21" href="$da/de3/a01398.html#a58b0dba4e9b60d9e9639eea530b6077b" title=" " alt="" coords="1572,205,1731,247"/>
+<area shape="rect" id="node16" href="$da/de3/a01398.html#af41d3ed90c69faf4279701b6aa98bd3a" title="Parse an expression, a series of terms separated by binary operators." alt="" coords="919,213,1096,239"/>
+<area shape="rect" id="node17" href="$da/de3/a01398.html#a6e92b63110e4ed2e5bf7533656730f3f" title="Parse a lisp&#45;like function application." alt="" coords="687,213,871,239"/>
+<area shape="rect" id="node18" href="$da/de3/a01398.html#a5e1b4411da5e7400c4fc45d4b3dbd795" title="Parse an if&#45;expression, with lazy eval on the branches." alt="" coords="465,263,639,290"/>
+<area shape="rect" id="node19" href="$da/de3/a01398.html#a2a5934e98ffa96d31e2135ab66c7e796" title="A statement is a list of variables to final&#45;assign or re&#45;assign, and an ifex for the value." alt="" coords="239,263,417,290"/>
+<area shape="rect" id="node20" href="$da/de3/a01398.html#adf95c17fe0de5cfff574ee89b78f0d37" title=" " alt="" coords="5,263,191,290"/>
+<area shape="rect" id="node22" href="$da/de3/a01398.html#ade4bf32252a86275a1ec393dea94ed6f" title=" " alt="" coords="1376,256,1524,297"/>
+<area shape="rect" id="node31" href="$d9/df5/a01086.html#a072d89561d4f5a3c8cfe1f9530d23394" title=" " alt="" coords="2557,660,2765,701"/>
+<area shape="rect" id="node32" href="$da/d73/a01090.html#aae916e3d1a36dc8aadc091a193ca8530" title=" " alt="" coords="2557,725,2765,767"/>
+</map>
